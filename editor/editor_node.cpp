@@ -108,6 +108,7 @@
 #include "plugins/theme_editor_plugin.h"
 #include "plugins/tile_map_editor_plugin.h"
 #include "plugins/tile_set_editor_plugin.h"
+#include "plugins/states_editor_plugin.h"
 // end
 #include "editor_settings.h"
 #include "import/editor_import_collada.h"
@@ -205,6 +206,8 @@ void EditorNode::_unhandled_input(const Ref<InputEvent> &p_event) {
 			emit_signal("request_help_search", "");
 		} else if (ED_IS_SHORTCUT("editor/editor_assetlib", p_event)) {
 			_editor_select(EDITOR_ASSETLIB);
+		} else if (ED_IS_SHORTCUT("editor/editor_states", p_event)) {
+			;
 		} else if (ED_IS_SHORTCUT("editor/editor_next", p_event)) {
 			_editor_select_next();
 		} else if (ED_IS_SHORTCUT("editor/editor_prev", p_event)) {
@@ -6073,6 +6076,10 @@ EditorNode::EditorNode() {
 	} else {
 		WARN_PRINT("Asset Library not available, as it requires SSL to work.");
 	}
+
+	// Add states editor plugin
+	add_editor_plugin(memnew(StatesEditorPlugin(this)));
+
 	//more visually meaningful to have this later
 	raise_bottom_panel_item(AnimationPlayerEditor::singleton);
 
