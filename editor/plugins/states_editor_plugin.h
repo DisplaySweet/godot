@@ -39,4 +39,7 @@ class StatesEditorPlugin : public EditorPlugin {
 
 public:
   StatesEditorPlugin(EditorNode *p_node);
+
+  virtual String get_name() const { return "States"; }
+  bool has_main_screen() const { return true; }
 };
