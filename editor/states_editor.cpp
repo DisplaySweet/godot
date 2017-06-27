@@ -29,6 +29,11 @@
 /*************************************************************************/
 #include "states_editor.h"
 
+#include "scene/gui/label.h"
+
 StatesEditor::StatesEditor() {
-  // Do something
+  VBoxContainer* layout = memnew(VBoxContainer);
+  add_child(layout);
+
+  layout->add_child(memnew(Label(TTR("This is a test"))));
 }

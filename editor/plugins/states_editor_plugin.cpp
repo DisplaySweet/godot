@@ -37,3 +37,14 @@ StatesEditorPlugin::StatesEditorPlugin(EditorNode *p_node) {
 
   state_editor->hide();
 }
+
+void StatesEditorPlugin::make_visible(bool p_visible) {
+  switch (p_visible) {
+    case true:
+      state_editor->show();
+      break;
+    default:
+      state_editor->hide();
+      break;
+  }
+}

@@ -42,4 +42,6 @@ public:
 
   virtual String get_name() const { return "States"; }
   bool has_main_screen() const { return true; }
+
+  virtual void make_visible(bool p_visible);
 };
