@@ -51,8 +51,12 @@ private:
   MenuButton *state_menu;
   ItemList *stateList;
 
+protected:
+	void _group_option(int p_op);
+
 public:
   StatesEditor();
+ 	static void _bind_methods();
 };
 
 #endif // STATES_EDITOR_H

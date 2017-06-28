@@ -33,6 +33,15 @@
 
 #include "scene/gui/label.h"
 
+void StatesEditor::_group_option(int p_op) {
+  switch (p_op) {
+  case NEW_STATE_GROUP:
+    stateList->add_item("New option");
+    print_line("New option added");
+    break;
+  }
+}
+
 StatesEditor::StatesEditor() {
   VBoxContainer* vlayout = memnew(VBoxContainer);
   add_child(vlayout);
@@ -49,6 +58,7 @@ StatesEditor::StatesEditor() {
   state_menu->get_popup()->add_shortcut(ED_SHORTCUT("state_editor/add_state_to_group", TTR("Add State")), ADD_STATE_TO_GROUP);
   state_menu->get_popup()->add_shortcut(ED_SHORTCUT("state_editor/remove_state_from_group", TTR("Remove State")), REMOVE_STATE_FROM_GROUP);
   state_menu->set_custom_minimum_size(Size2(50, 20));
+  state_menu->get_popup()->connect("id_pressed", this, "_group_option");
 
   HBoxContainer* hlayout2 = memnew(HBoxContainer);
   vlayout->add_child(hlayout2);
@@ -62,4 +72,10 @@ StatesEditor::StatesEditor() {
   stateList->add_item("Test");
 
   hlayout2->add_child(memnew(Label("This is a test")));
+
+  ED_SHORTCUT("editor/editor_states", TTR("State Editor"));
+}
+
+void StatesEditor::_bind_methods() {
+  ClassDB::bind_method("_group_option", &StatesEditor::_group_option);
 }
