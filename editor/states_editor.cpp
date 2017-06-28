@@ -39,6 +39,16 @@ void StatesEditor::_group_option(int p_op) {
     stateList->add_item("New option");
     print_line("New option added");
     break;
+  case REMOVE_STATE_GROUP:
+    stateList->remove_item(0);
+    break;
+  case ADD_STATE_TO_GROUP:
+    break;
+  case REMOVE_STATE_FROM_GROUP:
+    break;
+
+  default:
+    break;
   }
 }
 
