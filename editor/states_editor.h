@@ -33,8 +33,23 @@
 #include "editor/editor_plugin.h"
 #include "scene/gui/box_container.h"
 
+#include "scene/gui/item_list.h"
+#include "scene/gui/menu_button.h"
+
+enum StateMenuOptions {
+  NEW_STATE_GROUP,
+  REMOVE_STATE_GROUP,
+  ADD_STATE_TO_GROUP,
+  REMOVE_STATE_FROM_GROUP,
+};
+
 class StatesEditor : public VBoxContainer {
   GDCLASS(StatesEditor, VBoxContainer);
+
+private:
+  Vector<String> states;
+  MenuButton *state_menu;
+  ItemList *stateList;
 
 public:
   StatesEditor();

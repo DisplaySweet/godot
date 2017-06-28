@@ -29,11 +29,37 @@
 /*************************************************************************/
 #include "states_editor.h"
 
+#include "editor/editor_settings.h"
+
 #include "scene/gui/label.h"
 
 StatesEditor::StatesEditor() {
-  VBoxContainer* layout = memnew(VBoxContainer);
-  add_child(layout);
+  VBoxContainer* vlayout = memnew(VBoxContainer);
+  add_child(vlayout);
+  vlayout->set_v_size_flags(SIZE_EXPAND_FILL);
 
-  layout->add_child(memnew(Label(TTR("This is a test"))));
+  HBoxContainer* hlayout1 = memnew(HBoxContainer);
+  vlayout->add_child(hlayout1);
+
+  state_menu = memnew(MenuButton);
+  hlayout1->add_child(state_menu);
+  state_menu->set_text(TTR("States"));
+  state_menu->get_popup()->add_shortcut(ED_SHORTCUT("state_editor/new_group", TTR("New Group")), NEW_STATE_GROUP);
+  state_menu->get_popup()->add_shortcut(ED_SHORTCUT("state_editor/remove_group", TTR("Remove Group")), REMOVE_STATE_GROUP);
+  state_menu->get_popup()->add_shortcut(ED_SHORTCUT("state_editor/add_state_to_group", TTR("Add State")), ADD_STATE_TO_GROUP);
+  state_menu->get_popup()->add_shortcut(ED_SHORTCUT("state_editor/remove_state_from_group", TTR("Remove State")), REMOVE_STATE_FROM_GROUP);
+  state_menu->set_custom_minimum_size(Size2(50, 20));
+
+  HBoxContainer* hlayout2 = memnew(HBoxContainer);
+  vlayout->add_child(hlayout2);
+
+  hlayout2->set_v_size_flags(SIZE_EXPAND_FILL);
+
+  stateList = memnew(ItemList);
+  hlayout2->add_child(stateList);
+  stateList->set_custom_minimum_size(Size2(200, 200));
+
+  stateList->add_item("Test");
+
+  hlayout2->add_child(memnew(Label("This is a test")));
 }
