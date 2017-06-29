@@ -38,15 +38,21 @@ class StateGroup : public Object {
 
 private:
   String name;
+  Map<String, Map<String, String> > states;
 
 protected:
   static void _bind_methods();
 
 public:
   StateGroup(const String& name);
+  StateGroup();
   ~StateGroup();
 
-  String get_name();
+  void set_name(const String& name);
+  String get_name() const;
+
+  bool add_state(const String& state_name);
+  void remove_state(const String& state_name);
 };
 
 class PropertyStateStore : public Object {
@@ -62,7 +68,7 @@ public:
 
   StateGroup* get_state_group(const String& group_name);
   StateGroup* create_state_group(const String& group_name);
-  void add_state_group(StateGroup* p_group);
+  void add_state_group(Object* p_group);
 
   PropertyStateStore();
   ~PropertyStateStore();

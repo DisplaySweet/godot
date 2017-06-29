@@ -159,6 +159,8 @@ void register_core_types() {
 	ClassDB::register_virtual_class<PackedDataContainerRef>();
 	ClassDB::register_class<AStar>();
 
+	ClassDB::register_class<StateGroup>();
+
 	ip = IP::create();
 
 	_geometry = memnew(_Geometry);
