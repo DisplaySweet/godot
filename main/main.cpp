@@ -32,6 +32,7 @@
 #include "core/register_core_types.h"
 #include "drivers/register_driver_types.h"
 #include "global_config.h"
+#include "property_state_store.h"
 #include "message_queue.h"
 #include "modules/register_module_types.h"
 #include "os/os.h"
@@ -80,6 +81,7 @@ static InputMap *input_map = NULL;
 static bool _start_success = false;
 static ScriptDebugger *script_debugger = NULL;
 AudioServer *audio_server = NULL;
+static PropertyStateStore *property_state_store = NULL;
 
 static MessageQueue *message_queue = NULL;
 static Performance *performance = NULL;
@@ -207,6 +209,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 	globals = memnew(GlobalConfig);
 	input_map = memnew(InputMap);
+	property_state_store = memnew(PropertyStateStore);
 
 	register_core_settings(); //here globals is present
 

@@ -38,6 +38,7 @@
 #include "geometry.h"
 #include "global_config.h"
 #include "input_map.h"
+#include "property_state_store.h"
 #include "io/config_file.h"
 #include "io/http_client.h"
 #include "io/packet_peer.h"
@@ -189,6 +190,7 @@ void register_core_singletons() {
 	GlobalConfig::get_singleton()->add_singleton(GlobalConfig::Singleton("TranslationServer", TranslationServer::get_singleton()));
 	GlobalConfig::get_singleton()->add_singleton(GlobalConfig::Singleton("Input", Input::get_singleton()));
 	GlobalConfig::get_singleton()->add_singleton(GlobalConfig::Singleton("InputMap", InputMap::get_singleton()));
+	GlobalConfig::get_singleton()->add_singleton(GlobalConfig::Singleton("PropertyStateStore", PropertyStateStore::get_singleton()));
 }
 
 void unregister_core_types() {
