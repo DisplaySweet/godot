@@ -108,6 +108,7 @@
 #include "plugins/theme_editor_plugin.h"
 #include "plugins/tile_map_editor_plugin.h"
 #include "plugins/tile_set_editor_plugin.h"
+#include "plugins/states_editor_plugin.h"
 // end
 #include "editor_settings.h"
 #include "import/editor_import_collada.h"
@@ -6171,6 +6172,10 @@ EditorNode::EditorNode() {
 	} else {
 		WARN_PRINT("Asset Library not available, as it requires SSL to work.");
 	}
+
+	//Add the new state group code
+	add_editor_plugin(memnew(StatesEditorPlugin(this)));
+
 	//more visually meaningful to have this later
 	raise_bottom_panel_item(AnimationPlayerEditor::singleton);
 
