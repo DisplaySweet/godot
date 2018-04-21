@@ -48,3 +48,7 @@ Error ResourceImporterWMFVideo::import(const String &p_source_file, const String
 
     return ResourceSaver::save(p_save_path + ".wmfvstr", wmfv_stream);
 }
+
+ResourceImporterWMFVideo::ResourceImporterWMFVideo() {
+    
+}
