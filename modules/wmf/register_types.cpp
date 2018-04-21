@@ -13,7 +13,8 @@ void register_wmf_types() {
 	wmfv_import.instance();
 	ResourceFormatImporter::get_singleton()->add_importer(wmfv_import);
 #endif
-    ClassDB::register_class<WindowsMediaFoundationVideo>();
+    ClassDB::register_class<VideoStreamWMF>();
+//    ClassDB::register_class<WindowsMediaFoundationVideo>();
 }
 
 void unregister_wmf_types() {

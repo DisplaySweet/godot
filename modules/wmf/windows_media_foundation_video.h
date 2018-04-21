@@ -48,7 +48,7 @@ private:
 
 class VideoStreamWMF : public VideoStream {
     GDCLASS(VideoStreamWMF, VideoStream);
-    RES_BASE_EXTENSION("wmfstr");
+    RES_BASE_EXTENSION("wmfvstr");
 
     String file;
     int audio_track;

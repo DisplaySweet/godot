@@ -50,5 +50,5 @@ Error ResourceImporterWMFVideo::import(const String &p_source_file, const String
 }
 
 ResourceImporterWMFVideo::ResourceImporterWMFVideo() {
-    
+
 }
