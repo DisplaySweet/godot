@@ -57,16 +57,9 @@ protected:
     static void _bind_methods();
 
 public:
-    Ref<VideoStreamPlayback> instance_playback() {
-        Ref<VideoStreamPlaybackWMF> pb = memnew(VideoStreamPlaybackWMF);
-        pb->set_audio_track(audio_track);
-        pb->set_file(file);
-        return pb;
-    }
+    Ref<VideoStreamPlayback> instance_playback();
 
-    void set_file(const String &p_file) {
-        file = p_file;
-    }
+    void set_file(const String &p_file);
 
     String get_file() {
         return file;
