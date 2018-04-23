@@ -121,6 +121,8 @@ public:
 	void set_bus(const StringName &p_bus);
 	StringName get_bus() const;
 
+	float get_length() const;
+
 	VideoPlayer();
 	~VideoPlayer();
 };
