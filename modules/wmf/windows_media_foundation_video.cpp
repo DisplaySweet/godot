@@ -1,5 +1,12 @@
 #include "windows_media_foundation_video.h"
 
+#include <mfapi.h>
+
+#pragma comment(lib, "mfreadwrite")
+#pragma comment(lib, "mfplat")
+#pragma comment(lib, "mfuuid")
+
+
 void VideoStreamPlaybackWMF::play() {
     print_line(__FUNCTION__);
 }
@@ -57,6 +64,12 @@ void VideoStreamPlaybackWMF::seek(float p_time) {
 
 void VideoStreamPlaybackWMF::set_file(const String &p_file) {
     print_line(__FUNCTION__ ": " + p_file);
+
+    IMFMediaType* pType;
+    HRESULT hr = MFCreateMediaType(&pType);
+    hr = pType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+    hr = pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264);
+    hr = pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_YUY2);
 }
 
 Ref<Texture> VideoStreamPlaybackWMF::get_texture() {
@@ -88,6 +101,7 @@ void VideoStreamPlaybackWMF::set_audio_track(int p_idx) {
 
 VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
 : m_pSession(nullptr) {
+    print_line(__FUNCTION__);
     MFCreateMediaSession(nullptr, &m_pSession);
 }
 
@@ -120,4 +134,18 @@ Ref<VideoStreamPlayback> VideoStreamWMF::instance_playback() {
 void VideoStreamWMF::set_file(const String& p_file) {
     print_line(__FUNCTION__ ": " + p_file);
     file = p_file;
+}
+
+VideoStreamWMF::VideoStreamWMF() {
+    print_line(__FUNCTION__);
+    audio_track = 0;
+
+    CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    MFStartup(MF_VERSION);
+}
+
+VideoStreamWMF::~VideoStreamWMF() {
+    print_line(__FUNCTION__);
+
+    MFShutdown();
 }

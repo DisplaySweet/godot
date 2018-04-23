@@ -6,6 +6,7 @@
 
 #include <mfidl.h>
 
+
 class VideoStreamPlaybackWMF : public VideoStreamPlayback {
     GDCLASS(VideoStreamPlaybackWMF, VideoStreamPlayback);
 
@@ -69,9 +70,8 @@ public:
         audio_track = p_track;
     }
 
-    VideoStreamWMF() {
-        audio_track = 0;
-    }
+    VideoStreamWMF();
+    ~VideoStreamWMF();
 };
 
 #endif
