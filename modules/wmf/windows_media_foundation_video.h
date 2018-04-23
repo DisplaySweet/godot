@@ -3,13 +3,44 @@
 
 #include "io/resource_loader.h"
 #include "scene/resources/video_stream.h"
+#include "os/thread_safe.h"
 
-#include <mfidl.h>
+
+
+class SampleGrabberCallback;
+class IMFMediaSession;
+class IMFMediaSource;
+class IMFTopology;
+class IMFPresentationClock;
 
 class VideoStreamPlaybackWMF : public VideoStreamPlayback {
     GDCLASS(VideoStreamPlaybackWMF, VideoStreamPlayback);
 
+	IMFMediaSession *media_session;
+	IMFMediaSource *media_source;
+	IMFTopology *topology;
+	IMFPresentationClock *presentation_clock;
+	SampleGrabberCallback *sample_grabber_callback;
+
+	PoolVector<uint8_t> frame_data;
+	Ref<ImageTexture> texture;
+    ThreadSafe mtx;
+
+	bool is_video_playing;
+	bool is_video_paused;
+	bool is_video_seekable;
+
+	void shutdown_stream();
+
 public:
+	struct StreamInfo
+	{
+		Point2i size;
+		float fps;
+		float duration;
+	};
+	StreamInfo stream_info;
+
     virtual void play();
     virtual void stop();
     virtual bool is_playing() const;
@@ -41,9 +72,6 @@ public:
 
     VideoStreamPlaybackWMF();
     ~VideoStreamPlaybackWMF();
-
-private:
-    IMFMediaSession* m_pSession;
 };
 
 class VideoStreamWMF : public VideoStream {
@@ -57,16 +85,9 @@ protected:
     static void _bind_methods();
 
 public:
-    Ref<VideoStreamPlayback> instance_playback() {
-        Ref<VideoStreamPlaybackWMF> pb = memnew(VideoStreamPlaybackWMF);
-        pb->set_audio_track(audio_track);
-        pb->set_file(file);
-        return pb;
-    }
+    Ref<VideoStreamPlayback> instance_playback();
 
-    void set_file(const String &p_file) {
-        file = p_file;
-    }
+    void set_file(const String &p_file);
 
     String get_file() {
         return file;
@@ -76,9 +97,8 @@ public:
         audio_track = p_track;
     }
 
-    VideoStreamWMF() {
-        audio_track = 0;
-    }
+    VideoStreamWMF();
+    ~VideoStreamWMF();
 };
 
 #endif
