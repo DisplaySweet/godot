@@ -6,8 +6,8 @@
 
 #include <mfidl.h>
 
-class WindowsMediaFoundationVideo : public VideoStreamPlayback {
-    GDCLASS(WindowsMediaFoundationVideo, VideoStreamPlayback);
+class VideoStreamPlaybackWMF : public VideoStreamPlayback {
+    GDCLASS(VideoStreamPlaybackWMF, VideoStreamPlayback);
 
 public:
     virtual void play();
@@ -39,8 +39,8 @@ public:
 
     virtual void set_audio_track(int p_idx);
 
-    WindowsMediaFoundationVideo();
-    ~WindowsMediaFoundationVideo();
+    VideoStreamPlaybackWMF();
+    ~VideoStreamPlaybackWMF();
 
 private:
     IMFMediaSession* m_pSession;
@@ -58,7 +58,7 @@ protected:
 
 public:
     Ref<VideoStreamPlayback> instance_playback() {
-        Ref<WindowsMediaFoundationVideo> pb = memnew(WindowsMediaFoundationVideo);
+        Ref<VideoStreamPlaybackWMF> pb = memnew(VideoStreamPlaybackWMF);
         pb->set_audio_track(audio_track);
         pb->set_file(file);
         return pb;

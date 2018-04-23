@@ -1,87 +1,87 @@
 #include "windows_media_foundation_video.h"
 
-void WindowsMediaFoundationVideo::play() {
+void VideoStreamPlaybackWMF::play() {
 
 }
 
-void WindowsMediaFoundationVideo::stop() {
+void VideoStreamPlaybackWMF::stop() {
 
 }
 
-bool WindowsMediaFoundationVideo::is_playing() const {
+bool VideoStreamPlaybackWMF::is_playing() const {
     return false;
 }
 
-void WindowsMediaFoundationVideo::set_paused(bool p_paused) {
+void VideoStreamPlaybackWMF::set_paused(bool p_paused) {
 
 }
 
-bool WindowsMediaFoundationVideo::is_paused() const {
+bool VideoStreamPlaybackWMF::is_paused() const {
     return false;
 }
 
-void WindowsMediaFoundationVideo::set_loop(bool p_enabled) {
+void VideoStreamPlaybackWMF::set_loop(bool p_enabled) {
 
 }
 
-bool WindowsMediaFoundationVideo::has_loop() const {
+bool VideoStreamPlaybackWMF::has_loop() const {
     return false;
 }
 
-float WindowsMediaFoundationVideo::get_length() const {
+float VideoStreamPlaybackWMF::get_length() const {
     return 0.0f;
 }
 
-String WindowsMediaFoundationVideo::get_stream_name() const {
+String VideoStreamPlaybackWMF::get_stream_name() const {
     return String("");
 }
 
-int WindowsMediaFoundationVideo::get_loop_count() const {
+int VideoStreamPlaybackWMF::get_loop_count() const {
     return 0;
 }
 
-float WindowsMediaFoundationVideo::get_playback_position() const {
+float VideoStreamPlaybackWMF::get_playback_position() const {
     return 0.0f;
 }
 
-void WindowsMediaFoundationVideo::seek(float p_time) {
+void VideoStreamPlaybackWMF::seek(float p_time) {
 
 }
 
-void WindowsMediaFoundationVideo::set_file(const String &p_file) {
+void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 
 }
 
-Ref<Texture> WindowsMediaFoundationVideo::get_texture() {
+Ref<Texture> VideoStreamPlaybackWMF::get_texture() {
     return nullptr;
 }
 
-void WindowsMediaFoundationVideo::update(float p_delta) {
+void VideoStreamPlaybackWMF::update(float p_delta) {
 
 }
 
-void WindowsMediaFoundationVideo::set_mix_callback(AudioMixCallback p_callback, void *p_userdata) {
+void VideoStreamPlaybackWMF::set_mix_callback(AudioMixCallback p_callback, void *p_userdata) {
 
 }
 
-int WindowsMediaFoundationVideo::get_channels() const {
+int VideoStreamPlaybackWMF::get_channels() const {
     return 0;
 }
 
-int WindowsMediaFoundationVideo::get_mix_rate() const {
+int VideoStreamPlaybackWMF::get_mix_rate() const {
     return 0;
 }
 
-void WindowsMediaFoundationVideo::set_audio_track(int p_idx) {
+void VideoStreamPlaybackWMF::set_audio_track(int p_idx) {
 
 }
 
-WindowsMediaFoundationVideo::WindowsMediaFoundationVideo()
+VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
 : m_pSession(nullptr) {
     MFCreateMediaSession(nullptr, &m_pSession);
 }
 
-WindowsMediaFoundationVideo::~WindowsMediaFoundationVideo() {
+VideoStreamPlaybackWMF::~VideoStreamPlaybackWMF() {
     if (m_pSession != nullptr) {
         m_pSession->Shutdown();
     }
