@@ -410,6 +410,12 @@ StringName VideoPlayer::get_bus() const {
 	return "Master";
 }
 
+float VideoPlayer::get_length() const {
+	if (playback.is_null())
+		return 0;
+	return playback->get_length();
+}
+
 void VideoPlayer::_validate_property(PropertyInfo &property) const {
 
 	if (property.name == "bus") {
@@ -466,6 +472,10 @@ void VideoPlayer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_bus"), &VideoPlayer::get_bus);
 
 	ClassDB::bind_method(D_METHOD("get_video_texture"), &VideoPlayer::get_video_texture);
+
+	ClassDB::bind_method(D_METHOD("get_length"), &VideoPlayer::get_length);
+
+	ADD_SIGNAL(MethodInfo("finished"));
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "audio_track", PROPERTY_HINT_RANGE, "0,128,1"), "set_audio_track", "get_audio_track");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VideoStream"), "set_stream", "get_stream");
