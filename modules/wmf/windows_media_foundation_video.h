@@ -6,9 +6,26 @@
 
 #include <mfidl.h>
 
+class SampleGrabberCallback;
+
 
 class VideoStreamPlaybackWMF : public VideoStreamPlayback {
     GDCLASS(VideoStreamPlaybackWMF, VideoStreamPlayback);
+
+	IMFMediaSession *m_pSession;
+	IMFMediaSource *m_pSource;
+	IMFTopology *m_pTopology;
+	SampleGrabberCallback* m_pCallback;
+
+	PoolVector<uint8_t> frame_data;
+	Ref<ImageTexture> texture;
+
+	Point2i size;
+
+	bool isPlaying;
+
+	IMFMediaSource* create_media_source(const String &p_file);
+	
 
 public:
     virtual void play();
@@ -41,10 +58,7 @@ public:
     virtual void set_audio_track(int p_idx);
 
     VideoStreamPlaybackWMF();
-    ~VideoStreamPlaybackWMF();
-
-private:
-    IMFMediaSession* m_pSession;
+    ~VideoStreamPlaybackWMF();    
 };
 
 class VideoStreamWMF : public VideoStream {
