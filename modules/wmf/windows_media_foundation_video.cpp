@@ -91,6 +91,8 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 	hr = pPD->GetStreamDescriptorCount(&cStreams);
 	CHECK_HR(hr);
 
+	printf("%d streams\n", cStreams);
+
 	for (DWORD i = 0; i < cStreams; i++)
 	{
 		BOOL fSelected = FALSE;
@@ -103,12 +105,17 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 		hr = pHandler->GetMajorType(&majorType);
 		CHECK_HR(hr);
 
+		if (fSelected == FALSE) {
+			printf("%d stream not selected\n", i);
+		}
+
 		IMFMediaType* pType = NULL;
 		hr = pHandler->GetMediaTypeByIndex(0, &pType);
 		CHECK_HR(hr);
 
 		if (majorType == MFMediaType_Video && fSelected) 
 		{
+			print_line("Video Stream");
 			hr = AddSourceNode(pTopology, pSource, pPD, pSD,&pNode1);
 			hr = AddOutputNode(pTopology, pSinkActivate, 0, &pNode2);
 			hr = pNode1->ConnectOutput(0, pNode2, 0);
@@ -122,16 +129,17 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 		}
 		else if (majorType == MFMediaType_Audio && fSelected)
 		{
+			print_line("Audio Stream");
 			hr = AddSourceNode(pTopology, pSource, pPD, pSD, &pNode1);
 			CHECK_HR(hr);
 			hr = AddOutputNode(pTopology, pSinkActivate, 0, &pNode2);
 			CHECK_HR(hr);
 			hr = pNode1->ConnectOutput(0, pNode2, 0);
 			CHECK_HR(hr);
-			break;
 		}
 		else
 		{
+			print_line("Stream deselected");
 			hr = pPD->DeselectStream(i);
 			CHECK_HR(hr);
 		}
@@ -164,7 +172,7 @@ IMFMediaSource* VideoStreamPlaybackWMF::create_media_source(const String &p_file
 	hr = MFCreateSourceResolver(&pSourceResolver);
 	CHECK_HR(hr);
 
-	wchar_t* sFile = L"D:\\Godot\\Workspace\\VideoPlayback\\OneBarangaroo_Film_TV.mp4";
+	wchar_t* sFile = L"file://C:\\Users\\Aren\\Documents\\TestGodotProject\\SampleVideo_1280x720_5mb.mp4";
 	MF_OBJECT_TYPE ObjectType;
 	hr = pSourceResolver->CreateObjectFromURL( sFile, // p_file.c_str(),
 											  MF_RESOLUTION_MEDIASOURCE, nullptr, &ObjectType, &pSource);
@@ -259,16 +267,13 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
     hr = pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_YUY2);
 	CHECK_HR(hr);
 
-	SampleGrabberCallback* pCallback = nullptr;
 	IMFActivate* pSinkActivate = nullptr;
 
 	// Create the sample grabber sink.
-	hr = SampleGrabberCallback::CreateInstance(&pCallback);
+	hr = SampleGrabberCallback::CreateInstance(&m_pCallback);
 	CHECK_HR(hr);
 
-	m_pCallback = pCallback;
-
-	hr = MFCreateSampleGrabberSinkActivate(pType, pCallback, &pSinkActivate);
+	hr = MFCreateSampleGrabberSinkActivate(pType, m_pCallback, &pSinkActivate);
 	CHECK_HR(hr);
 
 	// To run as fast as possible, set this attribute (requires Windows 7):
@@ -290,8 +295,8 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 	hr = m_pSession->Start(&GUID_NULL, &var);
 	CHECK_HR(hr);
 
-	size.x = 1080;
-	size.y = 1920;
+	size.x = 1920;
+	size.y = 1080;
 
 	texture->create(size.x, size.y, Image::FORMAT_RGBA8, Texture::FLAG_FILTER | Texture::FLAG_VIDEO_SURFACE);
 }
@@ -311,28 +316,27 @@ void VideoStreamPlaybackWMF::update(float p_delta) {
 		MediaEventType met;
 		IMFMediaEvent* pEvent = nullptr;
 
-		while (true)
-		{
-			hr = m_pSession->GetEvent(MF_EVENT_FLAG_NO_WAIT, &pEvent);
-			if (FAILED(hr))
-			{
-				break;
-			}
-
+		hr = m_pSession->GetEvent(MF_EVENT_FLAG_NO_WAIT, &pEvent);
+		if (hr == S_OK) {
 			hr = pEvent->GetStatus(&hrStatus);
-			hr = pEvent->GetType(&met);
-
-			if (hr == MF_E_NO_EVENTS_AVAILABLE)
-			{
-				break;
+			if (hr == S_OK) {
+				hr = pEvent->GetType(&met);
+				if (hr == S_OK) {
+					printf("%d\n", met);
+				}
 			}
 		}
+		SafeRelease(pEvent);
 
 		int pitch = 4;
 		frame_data.resize(size.x * size.y * pitch);
 		{
 			PoolVector<uint8_t>::Write w = frame_data.write();
 			char *dst = (char *)w.ptr();
+
+			for (int i = 0; i < (size.x * size.y * pitch); ++i) {
+				dst[i] = 0xff;
+			}
 
 			//uv_offset=(ti.pic_x/2)+(yuv[1].stride)*(ti.pic_y/2);
 			//yuv420_2_rgb8888((uint8_t *)dst, (uint8_t *)yuv[0].data, (uint8_t *)yuv[2].data, (uint8_t *)yuv[1].data, size.x, size.y, yuv[0].stride, yuv[1].stride, size.x << 2, 0);
@@ -402,6 +406,10 @@ Ref<VideoStreamPlayback> VideoStreamWMF::instance_playback() {
 
 void VideoStreamWMF::set_file(const String& p_file) {
     print_line(__FUNCTION__ ": " + p_file);
+
+	HRESULT hr = S_OK;
+	
+
     file = p_file;
 }
 

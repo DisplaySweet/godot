@@ -52,26 +52,31 @@ STDMETHODIMP_(ULONG) SampleGrabberCallback::Release()
 
 STDMETHODIMP SampleGrabberCallback::OnClockStart(MFTIME hnsSystemTime, LONGLONG llClockStartOffset)
 {
+    print_line(__FUNCTION__);
     return S_OK;
 }
 
 STDMETHODIMP SampleGrabberCallback::OnClockStop(MFTIME hnsSystemTime)
 {
+    print_line(__FUNCTION__);
     return S_OK;
 }
 
 STDMETHODIMP SampleGrabberCallback::OnClockPause(MFTIME hnsSystemTime)
 {
+    print_line(__FUNCTION__);
     return S_OK;
 }
 
 STDMETHODIMP SampleGrabberCallback::OnClockRestart(MFTIME hnsSystemTime)
 {
+    print_line(__FUNCTION__);
     return S_OK;
 }
 
 STDMETHODIMP SampleGrabberCallback::OnClockSetRate(MFTIME hnsSystemTime, float flRate)
 {
+    print_line(__FUNCTION__);
     return S_OK;
 }
 
@@ -79,6 +84,7 @@ STDMETHODIMP SampleGrabberCallback::OnClockSetRate(MFTIME hnsSystemTime, float f
 
 STDMETHODIMP SampleGrabberCallback::OnSetPresentationClock(IMFPresentationClock* pClock)
 {
+    print_line(__FUNCTION__);
     return S_OK;
 }
 
@@ -93,5 +99,6 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType, 
 
 STDMETHODIMP SampleGrabberCallback::OnShutdown()
 {
+    print_line(__FUNCTION__);
     return S_OK;
 }
