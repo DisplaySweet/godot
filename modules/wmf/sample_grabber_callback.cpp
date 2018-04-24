@@ -10,7 +10,9 @@ SampleGrabberCallback::SampleGrabberCallback() {
 
 HRESULT SampleGrabberCallback::CreateInstance(SampleGrabberCallback** ppCB)
 {
-    *ppCB = new (std::nothrow) SampleGrabberCallback;
+    print_line(__FUNCTION__);
+
+    *ppCB = new (std::nothrow) SampleGrabberCallback();
 
     if (ppCB == nullptr)
     {
@@ -21,6 +23,7 @@ HRESULT SampleGrabberCallback::CreateInstance(SampleGrabberCallback** ppCB)
 
 STDMETHODIMP SampleGrabberCallback::QueryInterface(REFIID riid, void** ppv)
 {
+    print_line(__FUNCTION__);
     static const QITAB qit[] =
     {
         QITABENT(SampleGrabberCallback, IMFSampleGrabberSinkCallback),

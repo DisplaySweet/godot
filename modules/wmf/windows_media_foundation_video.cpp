@@ -78,8 +78,8 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 	IMFPresentationDescriptor *pPD = NULL;
 	IMFStreamDescriptor *pSD = NULL;
 	IMFMediaTypeHandler *pHandler = NULL;
-	IMFTopologyNode *pNode1 = NULL;
-	IMFTopologyNode *pNode2 = NULL;
+	IMFTopologyNode *inputNode = NULL;
+	IMFTopologyNode *outputNode = NULL;
 
 	HRESULT hr = S_OK;
 	DWORD cStreams = 0;
@@ -105,38 +105,39 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 		hr = pHandler->GetMajorType(&majorType);
 		CHECK_HR(hr);
 
-		if (fSelected == FALSE) {
-			printf("%d stream not selected\n", i);
-		}
-
-		IMFMediaType* pType = NULL;
-		hr = pHandler->GetMediaTypeByIndex(0, &pType);
-		CHECK_HR(hr);
-
 		if (majorType == MFMediaType_Video && fSelected) 
 		{
 			print_line("Video Stream");
-			hr = AddSourceNode(pTopology, pSource, pPD, pSD,&pNode1);
-			hr = AddOutputNode(pTopology, pSinkActivate, 0, &pNode2);
-			hr = pNode1->ConnectOutput(0, pNode2, 0);
+
+			IMFMediaType* pType = NULL;
+			hr = pHandler->GetMediaTypeByIndex(0, &pType);
+			CHECK_HR(hr);
+
+			hr = AddSourceNode(pTopology, pSource, pPD, pSD,&inputNode);
+			CHECK_HR(hr);
+			hr = AddOutputNode(pTopology, pSinkActivate, 0, &outputNode);
+			CHECK_HR(hr);
+			hr = inputNode->ConnectOutput(0, outputNode, 0);
+			CHECK_HR(hr);
 
 			UINT32 m_uiWidth, m_uiHeight;
 			MFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &m_uiWidth, &m_uiHeight);
 
-			print_line("Width & Height" + itos(m_uiWidth) + itos(m_uiHeight));
+			print_line("Width & Height " + itos(m_uiWidth) + itos(m_uiHeight));
 
 			//m_pSampleBuffer = new BYTE[m_uiWidth * m_uiHeight * 4];
+			break;
 		}
-		else if (majorType == MFMediaType_Audio && fSelected)
-		{
-			print_line("Audio Stream");
-			hr = AddSourceNode(pTopology, pSource, pPD, pSD, &pNode1);
-			CHECK_HR(hr);
-			hr = AddOutputNode(pTopology, pSinkActivate, 0, &pNode2);
-			CHECK_HR(hr);
-			hr = pNode1->ConnectOutput(0, pNode2, 0);
-			CHECK_HR(hr);
-		}
+		// else if (majorType == MFMediaType_Audio && fSelected)
+		// {
+		// 	print_line("Audio Stream");
+		// 	hr = AddSourceNode(pTopology, pSource, pPD, pSD, &inputNode);
+		// 	CHECK_HR(hr);
+		// 	hr = AddOutputNode(pTopology, pSinkActivate, 0, &outputNode);
+		// 	CHECK_HR(hr);
+		// 	hr = inputNode->ConnectOutput(0, outputNode, 0);
+		// 	CHECK_HR(hr);
+		// }
 		else
 		{
 			print_line("Stream deselected");
@@ -152,8 +153,8 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 
 done:
 	SafeRelease(pTopology);
-	SafeRelease(pNode1);
-	SafeRelease(pNode2);
+	SafeRelease(inputNode);
+	SafeRelease(outputNode);
 	SafeRelease(pPD);
 	SafeRelease(pSD);
 	SafeRelease(pHandler);
@@ -161,7 +162,7 @@ done:
 }
 
 
-IMFMediaSource* VideoStreamPlaybackWMF::create_media_source(const String &p_file) {
+HRESULT VideoStreamPlaybackWMF::create_media_source(const String &p_file, IMFMediaSource** pMediaSource) {
 	print_line(__FUNCTION__);
 
 	IMFSourceResolver* pSourceResolver = nullptr;
@@ -178,11 +179,13 @@ IMFMediaSource* VideoStreamPlaybackWMF::create_media_source(const String &p_file
 											  MF_RESOLUTION_MEDIASOURCE, nullptr, &ObjectType, &pSource);
 	CHECK_HR(hr);
 
-	IMFMediaSource* pMediaSource = nullptr;
-	hr = pSource->QueryInterface(IID_PPV_ARGS(&pMediaSource));
+	hr = pSource->QueryInterface(IID_PPV_ARGS(pMediaSource));
 	CHECK_HR(hr);
 
-	return pMediaSource;
+	SafeRelease(pSourceResolver);
+	SafeRelease(pSource);
+
+	return hr;
 }
 
 void VideoStreamPlaybackWMF::play() {
@@ -262,10 +265,6 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 	CHECK_HR(hr);
     hr = pType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
 	CHECK_HR(hr);
-    hr = pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264);
-	CHECK_HR(hr);
-    hr = pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_YUY2);
-	CHECK_HR(hr);
 
 	IMFActivate* pSinkActivate = nullptr;
 
@@ -283,7 +282,9 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 	hr = MFCreateMediaSession(nullptr, &m_pSession);
 	CHECK_HR(hr);
 
-	m_pSource = create_media_source(p_file);
+	
+	hr = create_media_source(p_file, &m_pSource);
+	CHECK_HR(hr);
 	hr = CreateTopology(m_pSource, pSinkActivate, &m_pTopology);
 	CHECK_HR(hr);
 
@@ -318,11 +319,14 @@ void VideoStreamPlaybackWMF::update(float p_delta) {
 
 		hr = m_pSession->GetEvent(MF_EVENT_FLAG_NO_WAIT, &pEvent);
 		if (hr == S_OK) {
+			print_line("GOT EVENT");
 			hr = pEvent->GetStatus(&hrStatus);
 			if (hr == S_OK) {
 				hr = pEvent->GetType(&met);
 				if (hr == S_OK) {
-					printf("%d\n", met);
+					if (met == MESessionEnded) {
+						// We're done playing
+					}
 				}
 			}
 		}

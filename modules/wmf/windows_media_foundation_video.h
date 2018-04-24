@@ -24,7 +24,7 @@ class VideoStreamPlaybackWMF : public VideoStreamPlayback {
 
 	bool isPlaying;
 
-	IMFMediaSource* create_media_source(const String &p_file);
+	HRESULT create_media_source(const String &p_file, IMFMediaSource** ppSource);
 	
 
 public:
