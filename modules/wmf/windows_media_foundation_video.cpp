@@ -326,6 +326,10 @@ void VideoStreamPlaybackWMF::update(float p_delta) {
 				if (hr == S_OK) {
 					if (met == MESessionEnded) {
 						// We're done playing
+						SafeRelease(pEvent);
+						m_pSession->Shutdown();
+						SafeRelease(m_pSession);
+						return;
 					}
 				}
 			}
