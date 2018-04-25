@@ -4,15 +4,18 @@
 #include <cstdio>
 #include "print_string.h"
 
-SampleGrabberCallback::SampleGrabberCallback() {
+SampleGrabberCallback::SampleGrabberCallback(PoolVector<uint8_t>* frame_data, ThreadSafe* mtx)
+: frame_data(frame_data)
+, mtx(mtx)
+{
     m_cRef = 1;
 }
 
-HRESULT SampleGrabberCallback::CreateInstance(SampleGrabberCallback** ppCB)
+HRESULT SampleGrabberCallback::CreateInstance(SampleGrabberCallback** ppCB, PoolVector<uint8_t>* frame_data, ThreadSafe* mtx)
 {
     print_line(__FUNCTION__);
 
-    *ppCB = new (std::nothrow) SampleGrabberCallback();
+    *ppCB = new (std::nothrow) SampleGrabberCallback(frame_data, mtx);
 
     if (ppCB == nullptr)
     {
@@ -95,8 +98,13 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType, 
                                                     LONGLONG llSampleTime, LONGLONG llSampleDuration, const BYTE * pSampleBuffer,
                                                     DWORD dwSampleSize)
 {
-    // Display information about the sample.
-    print_line("Sample: start = " + itos(llSampleTime) + " duration = " + itos(llSampleDuration) + ", bytes = " + itos(dwSampleSize));
+    mtx->lock();
+    frame_data->resize(1920 * 1080 * 4);
+    PoolVector<uint8_t>::Write w = frame_data->write();
+    char *dst = (char *)w.ptr();
+
+    memcpy(dst, pSampleBuffer, dwSampleSize);
+    mtx->unlock();
     return S_OK;
 }
 

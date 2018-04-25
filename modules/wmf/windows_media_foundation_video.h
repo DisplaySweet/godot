@@ -3,6 +3,7 @@
 
 #include "io/resource_loader.h"
 #include "scene/resources/video_stream.h"
+#include "os/thread_safe.h"
 
 #include <mfidl.h>
 
@@ -19,6 +20,7 @@ class VideoStreamPlaybackWMF : public VideoStreamPlayback {
 
 	PoolVector<uint8_t> frame_data;
 	Ref<ImageTexture> texture;
+    ThreadSafe mtx;
 
 	Point2i size;
 

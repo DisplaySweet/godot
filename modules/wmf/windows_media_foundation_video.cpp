@@ -269,7 +269,7 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 	IMFActivate* pSinkActivate = nullptr;
 
 	// Create the sample grabber sink.
-	hr = SampleGrabberCallback::CreateInstance(&m_pCallback);
+	hr = SampleGrabberCallback::CreateInstance(&m_pCallback, &frame_data, &mtx);
 	CHECK_HR(hr);
 
 	hr = MFCreateSampleGrabberSinkActivate(pType, m_pCallback, &pSinkActivate);
@@ -336,22 +336,9 @@ void VideoStreamPlaybackWMF::update(float p_delta) {
 		}
 		SafeRelease(pEvent);
 
-		int pitch = 4;
-		frame_data.resize(size.x * size.y * pitch);
-		{
-			PoolVector<uint8_t>::Write w = frame_data.write();
-			char *dst = (char *)w.ptr();
-
-			for (int i = 0; i < (size.x * size.y * pitch); ++i) {
-				dst[i] = 0xff;
-			}
-
-			//uv_offset=(ti.pic_x/2)+(yuv[1].stride)*(ti.pic_y/2);
-			//yuv420_2_rgb8888((uint8_t *)dst, (uint8_t *)yuv[0].data, (uint8_t *)yuv[2].data, (uint8_t *)yuv[1].data, size.x, size.y, yuv[0].stride, yuv[1].stride, size.x << 2, 0);
-			//format = Image::FORMAT_RGBA8;
-		}
-
+		mtx.lock();
 		Ref<Image> img = memnew(Image(size.x, size.y, 0, Image::FORMAT_RGBA8, frame_data)); //zero copy image creation
+		mtx.unlock();
 		texture->set_data(img); //zero copy send to visual server
 
 		//frames_pending = 1;

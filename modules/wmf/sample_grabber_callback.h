@@ -1,14 +1,22 @@
-#include <mfidl.h>
+#ifndef SAMPLEGRABBERCALLBACK_H
+#define SAMPLEGRABBERCALLBACK_H
 
+#include "io/resource_loader.h"
+#include "scene/resources/video_stream.h"
+#include "os/thread_safe.h"
+
+#include <mfidl.h>
 
 class SampleGrabberCallback : public IMFSampleGrabberSinkCallback {
 	
 	long m_cRef;
+	PoolVector<uint8_t>* frame_data;
+	ThreadSafe* mtx;
 
-	SampleGrabberCallback();
+	SampleGrabberCallback(PoolVector<uint8_t>* frame_data, ThreadSafe* mtx);
 
 public:
-	static HRESULT CreateInstance(SampleGrabberCallback **ppCB);
+	static HRESULT CreateInstance(SampleGrabberCallback **ppCB, PoolVector<uint8_t>* frame_data, ThreadSafe* mtx);
 
 	// IUnknown methods
 	STDMETHODIMP QueryInterface(REFIID iid, void **ppv);
@@ -29,3 +37,5 @@ public:
 	                             DWORD dwSampleSize);
 	STDMETHODIMP OnShutdown();
 };
+
+#endif
