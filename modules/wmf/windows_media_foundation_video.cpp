@@ -319,7 +319,6 @@ void VideoStreamPlaybackWMF::update(float p_delta) {
 
 		hr = m_pSession->GetEvent(MF_EVENT_FLAG_NO_WAIT, &pEvent);
 		if (hr == S_OK) {
-			print_line("GOT EVENT");
 			hr = pEvent->GetStatus(&hrStatus);
 			if (hr == S_OK) {
 				hr = pEvent->GetType(&met);
