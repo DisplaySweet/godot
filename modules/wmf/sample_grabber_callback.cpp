@@ -3,12 +3,13 @@
 #include <Shlwapi.h>
 #include <cstdio>
 #include "print_string.h"
+#include <thirdparty/misc/yuv2rgb.h>
 
 SampleGrabberCallback::SampleGrabberCallback(PoolVector<uint8_t>* frame_data, ThreadSafe* mtx)
 : frame_data(frame_data)
 , mtx(mtx)
+, m_cRef(1)
 {
-    m_cRef = 1;
 }
 
 HRESULT SampleGrabberCallback::CreateInstance(SampleGrabberCallback** ppCB, PoolVector<uint8_t>* frame_data, ThreadSafe* mtx)
@@ -94,16 +95,57 @@ STDMETHODIMP SampleGrabberCallback::OnSetPresentationClock(IMFPresentationClock*
     return S_OK;
 }
 
-STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType, DWORD dwSampleFlags,
-                                                    LONGLONG llSampleTime, LONGLONG llSampleDuration, const BYTE * pSampleBuffer,
+STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType,
+                                                    DWORD dwSampleFlags,
+                                                    LONGLONG llSampleTime,
+                                                    LONGLONG llSampleDuration,
+                                                    const BYTE * pSampleBuffer,
                                                     DWORD dwSampleSize)
 {
-    mtx->lock();
-    frame_data->resize(1920 * 1080 * 4);
-    PoolVector<uint8_t>::Write w = frame_data->write();
+    frame_data2.resize(1920 * 1080 * 4);
+    PoolVector<uint8_t>::Write w = frame_data2.write();
     char *dst = (char *)w.ptr();
 
-    memcpy(dst, pSampleBuffer, dwSampleSize);
+	int width = 1920;
+	int height = 1080;
+
+	BYTE* pSampleBufferY = (BYTE*)pSampleBuffer;
+
+	size_t UOffset2 = (((height + 15) & ~15) * width);
+	BYTE* pSampleBufferU = pSampleBufferY + UOffset2;
+
+	size_t VOffset2 = ((((height / 2) + 7) & ~7) * (width / 2));
+	BYTE* pSampleBufferV = pSampleBufferU + VOffset2;
+
+    //memcpy(dst, pSampleBuffer, dwSampleSize);
+
+	/*
+	void yuv420_2_rgb8888(
+		uint8_t  *dst_ptr_,
+		const uint8_t  *y_ptr,
+		const uint8_t  *u_ptr,
+		const uint8_t  *v_ptr,
+		int32_t   width,
+		int32_t   height,
+		int32_t   y_span,
+		int32_t   uv_span,
+		int32_t   dst_span,
+		int32_t   dither)
+	*/
+	
+	yuv420_2_rgb8888((uint8_t *)dst,
+				     (uint8_t *)pSampleBufferY,
+					 (uint8_t *)pSampleBufferV,
+					 (uint8_t *)pSampleBufferU,
+					 width, height,
+					 width,
+					 width / 2,
+					 width * 4, 0);
+
+	//format = Image::FORMAT_RGBA8;
+
+	mtx->lock();
+	*frame_data = frame_data2;
     mtx->unlock();
     return S_OK;
 }

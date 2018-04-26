@@ -11,6 +11,7 @@ class SampleGrabberCallback : public IMFSampleGrabberSinkCallback {
 	
 	long m_cRef;
 	PoolVector<uint8_t>* frame_data;
+	PoolVector<uint8_t> frame_data2;
 	ThreadSafe* mtx;
 
 	SampleGrabberCallback(PoolVector<uint8_t>* frame_data, ThreadSafe* mtx);

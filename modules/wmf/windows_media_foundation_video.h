@@ -5,10 +5,11 @@
 #include "scene/resources/video_stream.h"
 #include "os/thread_safe.h"
 
-#include <mfidl.h>
 
 class SampleGrabberCallback;
-
+class IMFMediaSession;
+class IMFMediaSource;
+class IMFTopology;
 
 class VideoStreamPlaybackWMF : public VideoStreamPlayback {
     GDCLASS(VideoStreamPlaybackWMF, VideoStreamPlayback);
@@ -23,11 +24,7 @@ class VideoStreamPlaybackWMF : public VideoStreamPlayback {
     ThreadSafe mtx;
 
 	Point2i size;
-
 	bool isPlaying;
-
-	HRESULT create_media_source(const String &p_file, IMFMediaSource** ppSource);
-	
 
 public:
     virtual void play();

@@ -2,6 +2,7 @@
 
 #include <mfapi.h>
 #include <mferror.h>
+#include <mfidl.h>
 #include "sample_grabber_callback.h"
 #include <thirdparty/misc/yuv2rgb.h>
 
@@ -91,7 +92,7 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 	hr = pPD->GetStreamDescriptorCount(&cStreams);
 	CHECK_HR(hr);
 
-	printf("%d streams\n", cStreams);
+	print_line(itos(cStreams) + " streams");
 
 	for (DWORD i = 0; i < cStreams; i++)
 	{
@@ -128,16 +129,6 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 			//m_pSampleBuffer = new BYTE[m_uiWidth * m_uiHeight * 4];
 			break;
 		}
-		// else if (majorType == MFMediaType_Audio && fSelected)
-		// {
-		// 	print_line("Audio Stream");
-		// 	hr = AddSourceNode(pTopology, pSource, pPD, pSD, &inputNode);
-		// 	CHECK_HR(hr);
-		// 	hr = AddOutputNode(pTopology, pSinkActivate, 0, &outputNode);
-		// 	CHECK_HR(hr);
-		// 	hr = inputNode->ConnectOutput(0, outputNode, 0);
-		// 	CHECK_HR(hr);
-		// }
 		else
 		{
 			print_line("Stream deselected");
@@ -162,7 +153,7 @@ done:
 }
 
 
-HRESULT VideoStreamPlaybackWMF::create_media_source(const String &p_file, IMFMediaSource** pMediaSource) {
+HRESULT CreateMediaSource(const String &p_file, IMFMediaSource** pMediaSource) {
 	print_line(__FUNCTION__);
 
 	IMFSourceResolver* pSourceResolver = nullptr;
@@ -173,7 +164,7 @@ HRESULT VideoStreamPlaybackWMF::create_media_source(const String &p_file, IMFMed
 	hr = MFCreateSourceResolver(&pSourceResolver);
 	CHECK_HR(hr);
 
-	wchar_t* sFile = L"file://C:\\Users\\Aren\\Documents\\TestGodotProject\\SampleVideo_1280x720_5mb.mp4";
+	wchar_t* sFile = L"file://D:\\Godot\\Workspace\\VideoPlayback\\OneBarangaroo_Film_TV.mp4";
 	MF_OBJECT_TYPE ObjectType;
 	hr = pSourceResolver->CreateObjectFromURL( sFile, // p_file.c_str(),
 											  MF_RESOLUTION_MEDIASOURCE, nullptr, &ObjectType, &pSource);
@@ -264,6 +255,8 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
     HRESULT hr = MFCreateMediaType(&pType);
 	CHECK_HR(hr);
     hr = pType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+	hr = pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264);
+	hr = pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_I420);
 	CHECK_HR(hr);
 
 	IMFActivate* pSinkActivate = nullptr;
@@ -282,8 +275,7 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 	hr = MFCreateMediaSession(nullptr, &m_pSession);
 	CHECK_HR(hr);
 
-	
-	hr = create_media_source(p_file, &m_pSource);
+	hr = CreateMediaSource(p_file, &m_pSource);
 	CHECK_HR(hr);
 	hr = CreateTopology(m_pSource, pSinkActivate, &m_pTopology);
 	CHECK_HR(hr);
@@ -310,8 +302,8 @@ Ref<Texture> VideoStreamPlaybackWMF::get_texture() {
 void VideoStreamPlaybackWMF::update(float p_delta) {
     //print_line(__FUNCTION__ ": " + rtos(p_delta));
 
-	if (m_pSession)
-	{
+	if (m_pSession) {
+
 		HRESULT hr = S_OK;
 		HRESULT hrStatus = S_OK;
 		MediaEventType met;
@@ -365,10 +357,10 @@ void VideoStreamPlaybackWMF::set_audio_track(int p_idx) {
 VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
 : m_pSession(nullptr)
 , m_pSource(nullptr)
-, m_pTopology(nullptr) {
+, m_pTopology(nullptr)
+, isPlaying(false) {
     print_line(__FUNCTION__);
 
-	isPlaying = false;
 	texture = Ref<ImageTexture>(memnew(ImageTexture));
 }
 
@@ -402,8 +394,6 @@ void VideoStreamWMF::set_file(const String& p_file) {
     print_line(__FUNCTION__ ": " + p_file);
 
 	HRESULT hr = S_OK;
-	
-
     file = p_file;
 }
 
