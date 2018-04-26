@@ -33,6 +33,7 @@ public:
 	{
 		Point2i size;
 		float fps;
+		float duration;
 	};
 	StreamInfo stream_info;
 

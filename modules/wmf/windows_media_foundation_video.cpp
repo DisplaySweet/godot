@@ -111,8 +111,17 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 
 			info->size.x = width;
 			info->size.y = height;
+			print_line("Width & Height " + itos(width) + "x" + itos(height));
 
-			print_line("Width & Height " + itos(width) + itos(height));
+			UINT32 numerator, denominator;
+			MFGetAttributeRatio(pType, MF_MT_FRAME_RATE, &numerator, &denominator);
+			print_line("Frame Rate: " + itos(numerator) + "/" + itos(denominator));
+
+			UINT64 duration;
+			pPD->GetUINT64(MF_PD_DURATION, &duration);
+			info->duration = duration / 10000000.f;
+			print_line("Duration: " + rtos(info->duration) + " secs");
+
 			break;
 		}
 		else if (majorType == MFMediaType_Audio && bSelected)
@@ -155,7 +164,7 @@ HRESULT CreateMediaSource(const String &p_file, IMFMediaSource** pMediaSource) {
 	HRESULT hr = S_OK;
 	CHECK_HR(MFCreateSourceResolver(&pSourceResolver));
 
-	wchar_t* sFile = L"file://D:\\Godot\\Workspace\\VideoPlayback\\URBIS_video.mp4";
+	wchar_t* sFile = L"file://D:\\Godot\\Workspace\\VideoPlayback\\OneBarangaroo_Film_TV.mp4";
 	MF_OBJECT_TYPE ObjectType;
 	CHECK_HR(pSourceResolver->CreateObjectFromURL( sFile, // p_file.c_str(),
 											  MF_RESOLUTION_MEDIASOURCE, nullptr, &ObjectType, &pSource));
@@ -176,8 +185,12 @@ void VideoStreamPlaybackWMF::play() {
 	PROPVARIANT var;
 	PropVariantInit(&var);
 	CHECK_HR(m_pSession->Start(&GUID_NULL, &var));
-	print_line("Play!");
-	is_video_playing = true;
+
+	if (SUCCEEDED(hr))
+	{
+		print_line("Play!");
+		is_video_playing = true;
+	}
 }
 
 void VideoStreamPlaybackWMF::stop() {
@@ -187,7 +200,11 @@ void VideoStreamPlaybackWMF::stop() {
 	PROPVARIANT var;
 	PropVariantInit(&var);
 	CHECK_HR(m_pSession->Stop());
-	is_video_playing = false;
+
+	if (SUCCEEDED(hr))
+	{
+		is_video_playing = false;
+	}
 }
 
 bool VideoStreamPlaybackWMF::is_playing() const {
@@ -198,6 +215,11 @@ bool VideoStreamPlaybackWMF::is_playing() const {
 void VideoStreamPlaybackWMF::set_paused(bool p_paused) {
     print_line(__FUNCTION__ ": " + itos(p_paused));
 	is_video_paused = p_paused;
+	if (p_paused)
+	{
+		HRESULT hr = S_OK;
+		CHECK_HR(m_pSession->Pause());
+	}
 }
 
 bool VideoStreamPlaybackWMF::is_paused() const {
@@ -216,7 +238,7 @@ bool VideoStreamPlaybackWMF::has_loop() const {
 
 float VideoStreamPlaybackWMF::get_length() const {
     print_line(__FUNCTION__);
-    return 40.0f;
+    return stream_info.duration;
 }
 
 String VideoStreamPlaybackWMF::get_stream_name() const {
@@ -256,8 +278,6 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 	CHECK_HR(SampleGrabberCallback::CreateInstance(&m_pCallback, &frame_data, &mtx));
 	CHECK_HR(MFCreateSampleGrabberSinkActivate(pType, m_pCallback, &pSinkActivate));
 
-	// To run as fast as possible, set this attribute (requires Windows 7):
-	CHECK_HR(pSinkActivate->SetUINT32(MF_SAMPLEGRABBERSINK_IGNORE_CLOCK, TRUE));
 	CHECK_HR(MFCreateMediaSession(nullptr, &m_pSession));
 
 	CHECK_HR(CreateMediaSource(p_file, &m_pSource));
@@ -270,6 +290,15 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 
 	if (SUCCEEDED(hr))
 	{
+		IMFRateControl* m_pRate;
+		HRESULT hrTmp = MFGetService(m_pSession, MF_RATE_CONTROL_SERVICE, IID_PPV_ARGS(&m_pRate));
+
+		BOOL bThin = false;
+		float fRate = 0.f;
+		CHECK_HR(m_pRate->GetRate(&bThin, &fRate));
+		print_line("Thin = " + itos(bThin) + ", Playback Rate:" + rtos(fRate));
+		//CHECK_HR(m_pRate->SetRate(TRUE, 1));
+
 		m_pCallback->SetFrameSize(stream_info.size.x, stream_info.size.y);
 
 		frame_data.resize(stream_info.size.x * stream_info.size.y * 4);
@@ -322,8 +351,6 @@ void VideoStreamPlaybackWMF::update(float p_delta) {
 		Ref<Image> img = memnew(Image(stream_info.size.x, stream_info.size.y, 0, Image::FORMAT_RGBA8, frame_data)); //zero copy image creation
 		mtx.unlock();
 		texture->set_data(img); //zero copy send to visual server
-
-		//frames_pending = 1;
 	}
 }
 
