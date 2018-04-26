@@ -73,7 +73,7 @@ done:
 
 
 // Create the topology.
-HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFTopology **ppTopo)
+HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFTopology **ppTopo, VideoStreamPlaybackWMF::StreamInfo* info)
 {
 	IMFTopology *pTopology = NULL;
 	IMFPresentationDescriptor *pPD = NULL;
@@ -124,12 +124,13 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 			hr = inputNode->ConnectOutput(0, outputNode, 0);
 			CHECK_HR(hr);
 
-			UINT32 m_uiWidth, m_uiHeight;
-			MFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &m_uiWidth, &m_uiHeight);
+			UINT32 width, height;
+			MFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &width, &height);
 
-			print_line("Width & Height " + itos(m_uiWidth) + itos(m_uiHeight));
+			info->size.x = width;
+			info->size.y = height;
 
-			//m_pSampleBuffer = new BYTE[m_uiWidth * m_uiHeight * 4];
+			print_line("Width & Height " + itos(width) + itos(height));
 			break;
 		}
 		else
@@ -166,7 +167,7 @@ HRESULT CreateMediaSource(const String &p_file, IMFMediaSource** pMediaSource) {
 	hr = MFCreateSourceResolver(&pSourceResolver);
 	CHECK_HR(hr);
 
-	wchar_t* sFile = L"file://D:\\Godot\\Workspace\\VideoPlayback\\OneBarangaroo_Film_TV.mp4";
+	wchar_t* sFile = L"file://D:\\Godot\\Workspace\\VideoPlayback\\URBIS_video.mp4";
 	MF_OBJECT_TYPE ObjectType;
 	hr = pSourceResolver->CreateObjectFromURL( sFile, // p_file.c_str(),
 											  MF_RESOLUTION_MEDIASOURCE, nullptr, &ObjectType, &pSource);
@@ -280,7 +281,7 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 
 	hr = CreateMediaSource(p_file, &m_pSource);
 	CHECK_HR(hr);
-	hr = CreateTopology(m_pSource, pSinkActivate, &m_pTopology);
+	hr = CreateTopology(m_pSource, pSinkActivate, &m_pTopology, &stream_info);
 	CHECK_HR(hr);
 
 	PROPVARIANT var;
@@ -289,10 +290,10 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 	hr = m_pSession->SetTopology(0, m_pTopology);
 	CHECK_HR(hr);
 
-	size.x = 1920;
-	size.y = 1080;
+	m_pCallback->SetFrameSize(stream_info.size.x, stream_info.size.y);
 
-	texture->create(size.x, size.y, Image::FORMAT_RGBA8, Texture::FLAG_FILTER | Texture::FLAG_VIDEO_SURFACE);
+	frame_data.resize(stream_info.size.x * stream_info.size.y * 4);
+	texture->create(stream_info.size.x, stream_info.size.y, Image::FORMAT_RGBA8, Texture::FLAG_FILTER | Texture::FLAG_VIDEO_SURFACE);
 }
 
 Ref<Texture> VideoStreamPlaybackWMF::get_texture() {
@@ -302,6 +303,10 @@ Ref<Texture> VideoStreamPlaybackWMF::get_texture() {
 
 void VideoStreamPlaybackWMF::update(float p_delta) {
     //print_line(__FUNCTION__ ": " + rtos(p_delta));
+
+	if (!is_video_playing || is_video_paused) {
+		return;
+	}
 
 	if (m_pSession) {
 
@@ -329,7 +334,7 @@ void VideoStreamPlaybackWMF::update(float p_delta) {
 		SafeRelease(pEvent);
 
 		mtx.lock();
-		Ref<Image> img = memnew(Image(size.x, size.y, 0, Image::FORMAT_RGBA8, frame_data)); //zero copy image creation
+		Ref<Image> img = memnew(Image(stream_info.size.x, stream_info.size.y, 0, Image::FORMAT_RGBA8, frame_data)); //zero copy image creation
 		mtx.unlock();
 		texture->set_data(img); //zero copy send to visual server
 

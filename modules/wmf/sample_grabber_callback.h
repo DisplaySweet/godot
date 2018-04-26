@@ -13,6 +13,8 @@ class SampleGrabberCallback : public IMFSampleGrabberSinkCallback {
 	PoolVector<uint8_t>* frame_data;
 	PoolVector<uint8_t> frame_data2;
 	ThreadSafe* mtx;
+	int width;
+	int height;
 
 	SampleGrabberCallback(PoolVector<uint8_t>* frame_data, ThreadSafe* mtx);
 
@@ -37,6 +39,9 @@ public:
 	                             LONGLONG llSampleTime, LONGLONG llSampleDuration, const BYTE *pSampleBuffer,
 	                             DWORD dwSampleSize);
 	STDMETHODIMP OnShutdown();
+
+	// custom methods
+	void SetFrameSize(int w, int h);
 };
 
 #endif

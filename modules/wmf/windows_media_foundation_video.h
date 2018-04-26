@@ -24,12 +24,18 @@ class VideoStreamPlaybackWMF : public VideoStreamPlayback {
 	Ref<ImageTexture> texture;
     ThreadSafe mtx;
 
-	Point2i size;
 	bool is_video_playing;
 	bool is_video_paused;
 	int64_t video_duration;
 
 public:
+	struct StreamInfo
+	{
+		Point2i size;
+		float fps;
+	};
+	StreamInfo stream_info;
+
     virtual void play();
     virtual void stop();
     virtual bool is_playing() const;
