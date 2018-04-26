@@ -12,7 +12,7 @@
 #pragma comment(lib, "mfuuid")
 
 
-#define CHECK_HR(h) if (FAILED(h)) { DebugBreak(); }
+#define CHECK_HR(func) if (SUCCEEDED(hr)) { hr = (func); if (FAILED(hr)) { DebugBreak(); } }
 #define SafeRelease(p) { if (p) { (p)->Release(); (p)=nullptr; } }
 
 
@@ -23,16 +23,11 @@ HRESULT AddSourceNode(IMFTopology* pTopology, IMFMediaSource* pSource,
 	IMFTopologyNode* pNode = NULL;
 
 	HRESULT hr = S_OK;
-	hr = MFCreateTopologyNode(MF_TOPOLOGY_SOURCESTREAM_NODE, &pNode);
-	CHECK_HR(hr);
-	hr = pNode->SetUnknown(MF_TOPONODE_SOURCE, pSource);
-	CHECK_HR(hr);
-	hr = pNode->SetUnknown(MF_TOPONODE_PRESENTATION_DESCRIPTOR, pPD);
-	CHECK_HR(hr);
-	hr = pNode->SetUnknown(MF_TOPONODE_STREAM_DESCRIPTOR, pSD);
-	CHECK_HR(hr);
-	hr = pTopology->AddNode(pNode);
-	CHECK_HR(hr);
+	CHECK_HR(MFCreateTopologyNode(MF_TOPOLOGY_SOURCESTREAM_NODE, &pNode));
+	CHECK_HR(pNode->SetUnknown(MF_TOPONODE_SOURCE, pSource));
+	CHECK_HR(pNode->SetUnknown(MF_TOPONODE_PRESENTATION_DESCRIPTOR, pPD));
+	CHECK_HR(pNode->SetUnknown(MF_TOPONODE_STREAM_DESCRIPTOR, pSD));
+	CHECK_HR(pTopology->AddNode(pNode));
 
 	*ppNode = pNode;
 	(*ppNode)->AddRef();
@@ -51,21 +46,18 @@ HRESULT AddOutputNode(IMFTopology *pTopology,     // Topology.
 	IMFTopologyNode *pNode = NULL;
 
 	HRESULT hr = S_OK;
-	hr = MFCreateTopologyNode(MF_TOPOLOGY_OUTPUT_NODE, &pNode);
-	CHECK_HR(hr);
-	hr = pNode->SetObject(pActivate);
-	CHECK_HR(hr);
-	hr = pNode->SetUINT32(MF_TOPONODE_STREAMID, dwId);
-	CHECK_HR(hr);
-	hr = pNode->SetUINT32(MF_TOPONODE_NOSHUTDOWN_ON_REMOVE, FALSE);
-	CHECK_HR(hr);
-	hr = pTopology->AddNode(pNode);
-	CHECK_HR(hr);
+	CHECK_HR(MFCreateTopologyNode(MF_TOPOLOGY_OUTPUT_NODE, &pNode));
+	CHECK_HR(pNode->SetObject(pActivate));
+	CHECK_HR(pNode->SetUINT32(MF_TOPONODE_STREAMID, dwId));
+	CHECK_HR(pNode->SetUINT32(MF_TOPONODE_NOSHUTDOWN_ON_REMOVE, FALSE));
+	CHECK_HR(pTopology->AddNode(pNode));
 
 	// Return the pointer to the caller.
-	*ppNode = pNode;
-	(*ppNode)->AddRef();
-
+	if (SUCCEEDED(hr))
+	{
+		*ppNode = pNode;
+		(*ppNode)->AddRef();
+	}
 done:
 	SafeRelease(pNode);
 	return hr;
@@ -87,16 +79,11 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 
 	HRESULT hr = S_OK;
 
-	hr = MFCreateTopology(&pTopology);
-	CHECK_HR(hr);
-
-	
-	hr = pSource->CreatePresentationDescriptor(&pPD);
-	CHECK_HR(hr);
+	CHECK_HR(MFCreateTopology(&pTopology));
+	CHECK_HR(pSource->CreatePresentationDescriptor(&pPD));
 
 	DWORD cStreams = 0;
-	hr = pPD->GetStreamDescriptorCount(&cStreams);
-	CHECK_HR(hr);
+	CHECK_HR(pPD->GetStreamDescriptorCount(&cStreams));
 
 	print_line(itos(cStreams) + " streams");
 
@@ -105,27 +92,19 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 		BOOL bSelected = FALSE;
 		GUID majorType;
 
-		hr = pPD->GetStreamDescriptorByIndex(i, &bSelected, &pSD);
-		CHECK_HR(hr);
-		hr = pSD->GetMediaTypeHandler(&pHandler);
-		CHECK_HR(hr);
-		hr = pHandler->GetMajorType(&majorType);
-		CHECK_HR(hr);
+		CHECK_HR(pPD->GetStreamDescriptorByIndex(i, &bSelected, &pSD));
+		CHECK_HR(pSD->GetMediaTypeHandler(&pHandler));
+		CHECK_HR(pHandler->GetMajorType(&majorType));
 
 		if (majorType == MFMediaType_Video && bSelected) 
 		{
 			print_line("Video Stream");
 
 			IMFMediaType* pType = NULL;
-			hr = pHandler->GetMediaTypeByIndex(0, &pType);
-			CHECK_HR(hr);
-
-			hr = AddSourceNode(pTopology, pSource, pPD, pSD,&inputNode);
-			CHECK_HR(hr);
-			hr = AddOutputNode(pTopology, pSinkActivate, 0, &outputNode);
-			CHECK_HR(hr);
-			hr = inputNode->ConnectOutput(0, outputNode, 0);
-			CHECK_HR(hr);
+			CHECK_HR(pHandler->GetMediaTypeByIndex(0, &pType));
+			CHECK_HR(AddSourceNode(pTopology, pSource, pPD, pSD,&inputNode));
+			CHECK_HR(AddOutputNode(pTopology, pSinkActivate, 0, &outputNode));
+			CHECK_HR(inputNode->ConnectOutput(0, outputNode, 0));
 
 			UINT32 width, height;
 			MFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &width, &height);
@@ -138,15 +117,15 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 		}
 		else if (majorType == MFMediaType_Audio && bSelected)
 		{
-			CHECK_HR(hr = MFCreateAudioRendererActivate(&audioActivate));
-			CHECK_HR(hr = AddSourceNode(pTopology, pSource, pPD, pSD, &inputNodeAudio));
-			CHECK_HR(hr = AddOutputNode(pTopology, audioActivate, 0, &outputNodeAudio));
-			CHECK_HR(hr = inputNodeAudio->ConnectOutput(0, outputNodeAudio, 0));
+			CHECK_HR(MFCreateAudioRendererActivate(&audioActivate));
+			CHECK_HR(AddSourceNode(pTopology, pSource, pPD, pSD, &inputNodeAudio));
+			CHECK_HR(AddOutputNode(pTopology, audioActivate, 0, &outputNodeAudio));
+			CHECK_HR(inputNodeAudio->ConnectOutput(0, outputNodeAudio, 0));
 		}
 		else
 		{
 			print_line("Stream deselected");
-			hr = pPD->DeselectStream(i);
+			CHECK_HR(pPD->DeselectStream(i));
 		}
 		SafeRelease(pSD);
 		SafeRelease(pHandler);
@@ -174,17 +153,14 @@ HRESULT CreateMediaSource(const String &p_file, IMFMediaSource** pMediaSource) {
 
 	// Create the source resolver.
 	HRESULT hr = S_OK;
-	hr = MFCreateSourceResolver(&pSourceResolver);
-	CHECK_HR(hr);
+	CHECK_HR(MFCreateSourceResolver(&pSourceResolver));
 
 	wchar_t* sFile = L"file://D:\\Godot\\Workspace\\VideoPlayback\\URBIS_video.mp4";
 	MF_OBJECT_TYPE ObjectType;
-	hr = pSourceResolver->CreateObjectFromURL( sFile, // p_file.c_str(),
-											  MF_RESOLUTION_MEDIASOURCE, nullptr, &ObjectType, &pSource);
-	CHECK_HR(hr);
+	CHECK_HR(pSourceResolver->CreateObjectFromURL( sFile, // p_file.c_str(),
+											  MF_RESOLUTION_MEDIASOURCE, nullptr, &ObjectType, &pSource));
 
-	hr = pSource->QueryInterface(IID_PPV_ARGS(pMediaSource));
-	CHECK_HR(hr);
+	CHECK_HR(pSource->QueryInterface(IID_PPV_ARGS(pMediaSource)));
 
 	SafeRelease(pSourceResolver);
 	SafeRelease(pSource);
@@ -199,7 +175,7 @@ void VideoStreamPlaybackWMF::play() {
 
 	PROPVARIANT var;
 	PropVariantInit(&var);
-	CHECK_HR(hr = m_pSession->Start(&GUID_NULL, &var));
+	CHECK_HR(m_pSession->Start(&GUID_NULL, &var));
 	print_line("Play!");
 	is_video_playing = true;
 }
@@ -210,7 +186,7 @@ void VideoStreamPlaybackWMF::stop() {
 	HRESULT hr = S_OK;
 	PROPVARIANT var;
 	PropVariantInit(&var);
-	CHECK_HR(hr = m_pSession->Stop());
+	CHECK_HR(m_pSession->Stop());
 	is_video_playing = false;
 }
 
@@ -265,45 +241,44 @@ void VideoStreamPlaybackWMF::seek(float p_time) {
 void VideoStreamPlaybackWMF::set_file(const String &p_file) {
     print_line(__FUNCTION__ ": " + p_file);
 
+	HRESULT hr = S_OK;
+
     IMFMediaType* pType = nullptr;
-    HRESULT hr = MFCreateMediaType(&pType);
-	CHECK_HR(hr);
-    hr = pType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
-	hr = pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264);
-	hr = pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_I420);
-	CHECK_HR(hr);
+	
+	CHECK_HR(MFCreateMediaType(&pType));
+    CHECK_HR(pType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video));
+	CHECK_HR(pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264));
+	CHECK_HR(pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_I420));
 
 	IMFActivate* pSinkActivate = nullptr;
 
 	// Create the sample grabber sink.
-	hr = SampleGrabberCallback::CreateInstance(&m_pCallback, &frame_data, &mtx);
-	CHECK_HR(hr);
-
-	hr = MFCreateSampleGrabberSinkActivate(pType, m_pCallback, &pSinkActivate);
-	CHECK_HR(hr);
+	CHECK_HR(SampleGrabberCallback::CreateInstance(&m_pCallback, &frame_data, &mtx));
+	CHECK_HR(MFCreateSampleGrabberSinkActivate(pType, m_pCallback, &pSinkActivate));
 
 	// To run as fast as possible, set this attribute (requires Windows 7):
-	hr = pSinkActivate->SetUINT32(MF_SAMPLEGRABBERSINK_IGNORE_CLOCK, TRUE);
-	CHECK_HR(hr);
+	CHECK_HR(pSinkActivate->SetUINT32(MF_SAMPLEGRABBERSINK_IGNORE_CLOCK, TRUE));
+	CHECK_HR(MFCreateMediaSession(nullptr, &m_pSession));
 
-	hr = MFCreateMediaSession(nullptr, &m_pSession);
-	CHECK_HR(hr);
-
-	hr = CreateMediaSource(p_file, &m_pSource);
-	CHECK_HR(hr);
-	hr = CreateTopology(m_pSource, pSinkActivate, &m_pTopology, &stream_info);
-	CHECK_HR(hr);
+	CHECK_HR(CreateMediaSource(p_file, &m_pSource));
+	CHECK_HR(CreateTopology(m_pSource, pSinkActivate, &m_pTopology, &stream_info));
 
 	PROPVARIANT var;
 	PropVariantInit(&var);
 
-	hr = m_pSession->SetTopology(0, m_pTopology);
-	CHECK_HR(hr);
+	CHECK_HR(m_pSession->SetTopology(0, m_pTopology));
 
-	m_pCallback->SetFrameSize(stream_info.size.x, stream_info.size.y);
+	if (SUCCEEDED(hr))
+	{
+		m_pCallback->SetFrameSize(stream_info.size.x, stream_info.size.y);
 
-	frame_data.resize(stream_info.size.x * stream_info.size.y * 4);
-	texture->create(stream_info.size.x, stream_info.size.y, Image::FORMAT_RGBA8, Texture::FLAG_FILTER | Texture::FLAG_VIDEO_SURFACE);
+		frame_data.resize(stream_info.size.x * stream_info.size.y * 4);
+		texture->create(stream_info.size.x, stream_info.size.y, Image::FORMAT_RGBA8, Texture::FLAG_FILTER | Texture::FLAG_VIDEO_SURFACE);
+	}
+	else
+	{
+		SafeRelease(m_pSession);
+	}
 }
 
 Ref<Texture> VideoStreamPlaybackWMF::get_texture() {
