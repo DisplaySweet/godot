@@ -7,7 +7,7 @@ env_wmf = env_modules.Clone()
 
 env_wmf.add_source_files(env.modules_sources, "*.cpp")
 
-EXTRALIBS = ['mfplat.lib', 'mf.lib']
+EXTRALIBS = ['mfplat.lib', 'mf.lib', 'dxva2.lib', 'd3d9.lib']
 env.Append(LINKFLAGS=[p for p in EXTRALIBS])
 
 Export('env')

@@ -3,6 +3,8 @@
 #include <mfapi.h>
 #include <mferror.h>
 #include <mfidl.h>
+#include <d3d9.h>
+#include <dxva2api.h>
 #include "sample_grabber_callback.h"
 #include <thirdparty/misc/yuv2rgb.h>
 
@@ -62,6 +64,65 @@ done:
 	SafeRelease(pNode);
 	return hr;
 }
+
+bool EnableDxva(IMFTransform **ppDecoder)
+{
+	UINT dev_manager_reset_token;
+	LPDIRECT3D9 d3d;
+	LPDIRECT3DDEVICE9 device;
+
+	d3d = Direct3DCreate9(D3D_SDK_VERSION);
+	if (d3d == nullptr)
+		DebugBreak();
+
+	D3DPRESENT_PARAMETERS d3dpp;
+
+	ZeroMemory(&d3dpp, sizeof(d3dpp));
+	d3dpp.Windowed = TRUE;
+	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
+	
+	HRESULT hr = d3d->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_NULLREF, 0, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dpp, &device);
+	CHECK_HR(hr);
+
+	// We now have a D3D context created
+	MFT_REGISTER_TYPE_INFO info = { 0 };
+	info.guidMajorType = MFMediaType_Video;
+	info.guidSubtype = MFVideoFormat_H264;
+
+	CLSID *ppCLSIDs = nullptr;
+	UINT32 count = 0;
+
+	hr = MFTEnum(
+		MFT_CATEGORY_VIDEO_DECODER,
+		0,
+		&info,
+		nullptr,
+		nullptr,
+		&ppCLSIDs,
+		&count
+	);
+	CHECK_HR(hr);
+
+	hr = CoCreateInstance(ppCLSIDs[0], nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(ppDecoder));
+
+	CoTaskMemFree(ppCLSIDs);
+
+	IDirect3DDeviceManager9 *pD3DManager = NULL;
+	hr = DXVA2CreateDirect3DDeviceManager9(&dev_manager_reset_token,
+                                                &pD3DManager);
+
+	CHECK_HR(hr);
+
+	pD3DManager->ResetDevice(device, dev_manager_reset_token)												;
+	CHECK_HR(hr);
+
+	hr = (*ppDecoder)->ProcessMessage(MFT_MESSAGE_SET_D3D_MANAGER, reinterpret_cast<ULONG_PTR>(pD3DManager));
+	CHECK_HR(hr);
+	
+	return false;
+}
+
+
 
 
 // Create the topology.
@@ -164,7 +225,7 @@ HRESULT CreateMediaSource(const String &p_file, IMFMediaSource** pMediaSource) {
 	HRESULT hr = S_OK;
 	CHECK_HR(MFCreateSourceResolver(&pSourceResolver));
 
-	wchar_t* sFile = L"file://D:\\Godot\\Workspace\\VideoPlayback\\OneBarangaroo_Film_TV.mp4";
+	wchar_t* sFile = L"file://C:\\Users\\Aren\\Documents\\TestGodotProject\\SampleVideo_1280x720_5mb.mp4";
 	MF_OBJECT_TYPE ObjectType;
 	CHECK_HR(pSourceResolver->CreateObjectFromURL( sFile, // p_file.c_str(),
 											  MF_RESOLUTION_MEDIASOURCE, nullptr, &ObjectType, &pSource));
@@ -264,24 +325,32 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
     print_line(__FUNCTION__ ": " + p_file);
 
 	HRESULT hr = S_OK;
-
+	
+	IMFTransform* transform = NULL;
     IMFMediaType* pType = nullptr;
 	
 	CHECK_HR(MFCreateMediaType(&pType));
     CHECK_HR(pType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video));
 	CHECK_HR(pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264));
-	CHECK_HR(pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_I420));
+	//CHECK_HR(pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_I420));
 
 	IMFActivate* pSinkActivate = nullptr;
 
 	// Create the sample grabber sink.
-	CHECK_HR(SampleGrabberCallback::CreateInstance(&m_pCallback, &frame_data, &mtx));
-	CHECK_HR(MFCreateSampleGrabberSinkActivate(pType, m_pCallback, &pSinkActivate));
+	// CHECK_HR(SampleGrabberCallback::CreateInstance(&m_pCallback, &frame_data, &mtx));
+	// CHECK_HR(MFCreateSampleGrabberSinkActivate(pType, m_pCallback, &pSinkActivate));
 
 	CHECK_HR(MFCreateMediaSession(nullptr, &m_pSession));
 
 	CHECK_HR(CreateMediaSource(p_file, &m_pSource));
-	CHECK_HR(CreateTopology(m_pSource, pSinkActivate, &m_pTopology, &stream_info));
+	// CHECK_HR(CreateTopology(m_pSource, pSinkActivate, &m_pTopology, &stream_info));
+
+	EnableDxva(&transform);
+	hr = transform->SetInputType(0, pType, 0);
+	if (hr != S_OK) {
+		printf("%d\n\n", hr);
+		DebugBreak();
+	}
 
 	PROPVARIANT var;
 	PropVariantInit(&var);
