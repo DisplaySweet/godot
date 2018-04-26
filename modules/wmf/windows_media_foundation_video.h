@@ -4,6 +4,7 @@
 #include "io/resource_loader.h"
 #include "scene/resources/video_stream.h"
 #include "os/thread_safe.h"
+#include <mfidl.h>
 
 
 class SampleGrabberCallback;
@@ -24,7 +25,9 @@ class VideoStreamPlaybackWMF : public VideoStreamPlayback {
     ThreadSafe mtx;
 
 	Point2i size;
-	bool isPlaying;
+	bool is_video_playing;
+	bool is_video_paused;
+	int64_t video_duration;
 
 public:
     virtual void play();

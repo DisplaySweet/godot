@@ -17,7 +17,8 @@
 
 
 HRESULT AddSourceNode(IMFTopology* pTopology, IMFMediaSource* pSource,
-					  IMFPresentationDescriptor* pPD, IMFStreamDescriptor* pSD, IMFTopologyNode** ppNode)
+					  IMFPresentationDescriptor* pPD, IMFStreamDescriptor* pSD,
+					  IMFTopologyNode** ppNode)
 {
 	IMFTopologyNode* pNode = NULL;
 
@@ -42,11 +43,10 @@ done:
 }
 
 // Add an output node to a topology.
-HRESULT AddOutputNode(
-	IMFTopology *pTopology,     // Topology.
-	IMFActivate *pActivate,     // Media sink activation object.
-	DWORD dwId,                 // Identifier of the stream sink.
-	IMFTopologyNode **ppNode)   // Receives the node pointer.
+HRESULT AddOutputNode(IMFTopology *pTopology,     // Topology.
+					  IMFActivate *pActivate,     // Media sink activation object.
+					  DWORD dwId,                 // Identifier of the stream sink.
+					  IMFTopologyNode **ppNode)   // Receives the node pointer.
 {
 	IMFTopologyNode *pNode = NULL;
 
@@ -83,12 +83,15 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 	IMFTopologyNode *outputNode = NULL;
 
 	HRESULT hr = S_OK;
-	DWORD cStreams = 0;
 
 	hr = MFCreateTopology(&pTopology);
 	CHECK_HR(hr);
+
+	
 	hr = pSource->CreatePresentationDescriptor(&pPD);
 	CHECK_HR(hr);
+
+	DWORD cStreams = 0;
 	hr = pPD->GetStreamDescriptorCount(&cStreams);
 	CHECK_HR(hr);
 
@@ -147,7 +150,6 @@ done:
 	SafeRelease(inputNode);
 	SafeRelease(outputNode);
 	SafeRelease(pPD);
-	SafeRelease(pSD);
 	SafeRelease(pHandler);
 	return hr;
 }
@@ -187,7 +189,7 @@ void VideoStreamPlaybackWMF::play() {
 	PropVariantInit(&var);
 	CHECK_HR(hr = m_pSession->Start(&GUID_NULL, &var));
 	print_line("Play!");
-	isPlaying = true;
+	is_video_playing = true;
 }
 
 void VideoStreamPlaybackWMF::stop() {
@@ -197,22 +199,22 @@ void VideoStreamPlaybackWMF::stop() {
 	PROPVARIANT var;
 	PropVariantInit(&var);
 	CHECK_HR(hr = m_pSession->Stop());
-	isPlaying = false;
+	is_video_playing = false;
 }
 
 bool VideoStreamPlaybackWMF::is_playing() const {
     //print_line(__FUNCTION__);
-    return isPlaying;
+    return is_video_playing;
 }
 
 void VideoStreamPlaybackWMF::set_paused(bool p_paused) {
     print_line(__FUNCTION__ ": " + itos(p_paused));
-	isPlaying = (p_paused);
+	is_video_paused = p_paused;
 }
 
 bool VideoStreamPlaybackWMF::is_paused() const {
     //print_line(__FUNCTION__);
-    return !isPlaying;
+    return !is_video_paused;
 }
 
 void VideoStreamPlaybackWMF::set_loop(bool p_enabled) {
@@ -310,7 +312,7 @@ void VideoStreamPlaybackWMF::update(float p_delta) {
 		IMFMediaEvent* pEvent = nullptr;
 
 		hr = m_pSession->GetEvent(MF_EVENT_FLAG_NO_WAIT, &pEvent);
-		if (hr == S_OK) {
+		if ( hr == S_OK) {
 			hr = pEvent->GetStatus(&hrStatus);
 			if (hr == S_OK) {
 				hr = pEvent->GetType(&met);
@@ -358,7 +360,9 @@ VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
 : m_pSession(nullptr)
 , m_pSource(nullptr)
 , m_pTopology(nullptr)
-, isPlaying(false) {
+, is_video_playing(false)
+, is_video_paused(false)
+, video_duration(0) {
     print_line(__FUNCTION__);
 
 	texture = Ref<ImageTexture>(memnew(ImageTexture));
