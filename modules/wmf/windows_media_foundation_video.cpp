@@ -73,7 +73,7 @@ done:
 
 
 // Create the topology.
-HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFTopology **ppTopo, VideoStreamPlaybackWMF::StreamInfo* info)
+HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFTopology **ppTopo, VideoStreamPlaybackWMF::StreamInfo *info)
 {
 	IMFTopology *pTopology = NULL;
 	IMFPresentationDescriptor *pPD = NULL;
@@ -81,6 +81,9 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 	IMFMediaTypeHandler *pHandler = NULL;
 	IMFTopologyNode *inputNode = NULL;
 	IMFTopologyNode *outputNode = NULL;
+	IMFTopologyNode *inputNodeAudio = NULL;
+	IMFTopologyNode *outputNodeAudio = NULL;
+	IMFActivate* audioActivate = NULL;
 
 	HRESULT hr = S_OK;
 
@@ -99,17 +102,17 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 
 	for (DWORD i = 0; i < cStreams; i++)
 	{
-		BOOL fSelected = FALSE;
+		BOOL bSelected = FALSE;
 		GUID majorType;
 
-		hr = pPD->GetStreamDescriptorByIndex(i, &fSelected, &pSD);
+		hr = pPD->GetStreamDescriptorByIndex(i, &bSelected, &pSD);
 		CHECK_HR(hr);
 		hr = pSD->GetMediaTypeHandler(&pHandler);
 		CHECK_HR(hr);
 		hr = pHandler->GetMajorType(&majorType);
 		CHECK_HR(hr);
 
-		if (majorType == MFMediaType_Video && fSelected) 
+		if (majorType == MFMediaType_Video && bSelected) 
 		{
 			print_line("Video Stream");
 
@@ -133,11 +136,17 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 			print_line("Width & Height " + itos(width) + itos(height));
 			break;
 		}
+		else if (majorType == MFMediaType_Audio && bSelected)
+		{
+			CHECK_HR(hr = MFCreateAudioRendererActivate(&audioActivate));
+			CHECK_HR(hr = AddSourceNode(pTopology, pSource, pPD, pSD, &inputNodeAudio));
+			CHECK_HR(hr = AddOutputNode(pTopology, audioActivate, 0, &outputNodeAudio));
+			CHECK_HR(hr = inputNodeAudio->ConnectOutput(0, outputNodeAudio, 0));
+		}
 		else
 		{
 			print_line("Stream deselected");
 			hr = pPD->DeselectStream(i);
-			CHECK_HR(hr);
 		}
 		SafeRelease(pSD);
 		SafeRelease(pHandler);
@@ -152,6 +161,7 @@ done:
 	SafeRelease(outputNode);
 	SafeRelease(pPD);
 	SafeRelease(pHandler);
+	SafeRelease(audioActivate);
 	return hr;
 }
 
