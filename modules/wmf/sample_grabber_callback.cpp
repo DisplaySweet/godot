@@ -99,12 +99,14 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType,
                                                     DWORD dwSampleFlags,
                                                     LONGLONG llSampleTime,
                                                     LONGLONG llSampleDuration,
-                                                    const BYTE * pSampleBuffer,
+                                                    const BYTE* pSampleBuffer,
                                                     DWORD dwSampleSize)
 {
     frame_data2.resize(1920 * 1080 * 4);
+	frame_data->resize(frame_data2.size());
+
     PoolVector<uint8_t>::Write w = frame_data2.write();
-    char *dst = (char *)w.ptr();
+    char *rgb_buffer = (char *)w.ptr();
 
 	int width = 1920;
 	int height = 1080;
@@ -116,8 +118,6 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType,
 
 	size_t VOffset2 = ((((height / 2) + 7) & ~7) * (width / 2));
 	BYTE* pSampleBufferV = pSampleBufferU + VOffset2;
-
-    //memcpy(dst, pSampleBuffer, dwSampleSize);
 
 	/*
 	void yuv420_2_rgb8888(
@@ -132,8 +132,7 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType,
 		int32_t   dst_span,
 		int32_t   dither)
 	*/
-	
-	yuv420_2_rgb8888((uint8_t *)dst,
+	yuv420_2_rgb8888((uint8_t *)rgb_buffer,
 				     (uint8_t *)pSampleBufferY,
 					 (uint8_t *)pSampleBufferV,
 					 (uint8_t *)pSampleBufferU,
@@ -145,7 +144,10 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType,
 	//format = Image::FORMAT_RGBA8;
 
 	mtx->lock();
-	*frame_data = frame_data2;
+	uint8_t* dst = frame_data->write().ptr();
+	const uint8_t* src = frame_data2.read().ptr();
+	memcpy(dst, src, frame_data2.size());
+	//*frame_data = frame_data2;
     mtx->unlock();
     return S_OK;
 }

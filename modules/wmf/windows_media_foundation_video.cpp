@@ -185,6 +185,7 @@ void VideoStreamPlaybackWMF::play() {
     print_line(__FUNCTION__);
 
 	HRESULT hr = S_OK;
+
 	PROPVARIANT var;
 	PropVariantInit(&var);
 	CHECK_HR(hr = m_pSession->Start(&GUID_NULL, &var));
@@ -287,8 +288,6 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 
 	hr = m_pSession->SetTopology(0, m_pTopology);
 	CHECK_HR(hr);
-	hr = m_pSession->Start(&GUID_NULL, &var);
-	CHECK_HR(hr);
 
 	size.x = 1920;
 	size.y = 1080;
@@ -357,9 +356,9 @@ void VideoStreamPlaybackWMF::set_audio_track(int p_idx) {
 }
 
 VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
-: m_pSession(nullptr)
-, m_pSource(nullptr)
-, m_pTopology(nullptr)
+: m_pSession(NULL)
+, m_pSource(NULL)
+, m_pTopology(NULL)
 , is_video_playing(false)
 , is_video_paused(false)
 , video_duration(0) {
@@ -386,8 +385,8 @@ void VideoStreamWMF::_bind_methods() {
 }
 
 Ref<VideoStreamPlayback> VideoStreamWMF::instance_playback() {
-
     print_line(__FUNCTION__);
+
     Ref<VideoStreamPlaybackWMF> pb = memnew(VideoStreamPlaybackWMF);
     pb->set_audio_track(audio_track);
     pb->set_file(file);
