@@ -15,11 +15,11 @@ class IMFTopology;
 class VideoStreamPlaybackWMF : public VideoStreamPlayback {
     GDCLASS(VideoStreamPlaybackWMF, VideoStreamPlayback);
 
-	IMFMediaSession *m_pSession;
-	IMFMediaSource *m_pSource;
-	IMFTopology *m_pTopology;
-	IMFPresentationClock* presentation_clock;
-	SampleGrabberCallback* m_pCallback;
+	IMFMediaSession *media_session;
+	IMFMediaSource *media_source;
+	IMFTopology *topology;
+	IMFPresentationClock *presentation_clock;
+	SampleGrabberCallback *sample_grabber_callback;
 
 	PoolVector<uint8_t> frame_data;
 	Ref<ImageTexture> texture;

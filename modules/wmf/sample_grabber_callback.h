@@ -41,7 +41,7 @@ public:
 	STDMETHODIMP OnShutdown();
 
 	// custom methods
-	void SetFrameSize(int w, int h);
+	void set_frame_size(int w, int h);
 };
 
 #endif

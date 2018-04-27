@@ -153,7 +153,7 @@ STDMETHODIMP SampleGrabberCallback::OnShutdown()
     return S_OK;
 }
 
-void SampleGrabberCallback::SetFrameSize(int w, int h)
+void SampleGrabberCallback::set_frame_size(int w, int h)
 {
 	width = w;
 	height = h;
