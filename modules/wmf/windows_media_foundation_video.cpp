@@ -173,7 +173,7 @@ HRESULT CreateMediaSource(const String &p_file, IMFMediaSource** pMediaSource) {
 	FileAccess* fa = FileAccess::open(p_file, FileAccess::READ, &e);
 
 	if (e != OK) {
-		return;
+		return E_FAIL;
 	}
 
 	String absolute_path = fa->get_path_absolute();
@@ -193,6 +193,8 @@ HRESULT CreateMediaSource(const String &p_file, IMFMediaSource** pMediaSource) {
 
 void VideoStreamPlaybackWMF::play() {
     print_line(__FUNCTION__);
+
+	if (is_video_playing) return;
 
 	HRESULT hr = S_OK;
 
@@ -271,12 +273,30 @@ int VideoStreamPlaybackWMF::get_loop_count() const {
 }
 
 float VideoStreamPlaybackWMF::get_playback_position() const {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
+
+	HRESULT hr = S_OK;
+	if (presentation_clock) {
+		MFTIME position = 0;
+		CHECK_HR(presentation_clock->GetTime(&position));
+		return position / 10000000.0;
+	}
     return 0.0f;
 }
 
 void VideoStreamPlaybackWMF::seek(float p_time) {
     print_line(__FUNCTION__ ": " + rtos(p_time));
+
+	if (m_pSession) {
+		
+		p_time *= 10000000.0;
+
+		HRESULT hr = S_OK;
+		PROPVARIANT varStart;
+		varStart.vt = VT_I8;
+		varStart.hVal.QuadPart = (MFTIME)p_time;
+		CHECK_HR(m_pSession->Start(NULL, &varStart));
+	}
 }
 
 void VideoStreamPlaybackWMF::set_file(const String &p_file) {
@@ -304,8 +324,8 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 
 	CHECK_HR(m_pSession->SetTopology(0, m_pTopology));
 
-	if (SUCCEEDED(hr))
-	{
+	if (SUCCEEDED(hr)) {
+
 		IMFRateControl* m_pRate;
 		HRESULT hrTmp = MFGetService(m_pSession, MF_RATE_CONTROL_SERVICE, IID_PPV_ARGS(&m_pRate));
 
@@ -313,10 +333,19 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 		float fRate = 0.f;
 		CHECK_HR(m_pRate->GetRate(&bThin, &fRate));
 		print_line("Thin = " + itos(bThin) + ", Playback Rate:" + rtos(fRate));
-		//CHECK_HR(m_pRate->SetRate(TRUE, 1));
+
+		DWORD caps = 0;
+		CHECK_HR(m_pSession->GetSessionCapabilities(&caps));
+		if ((caps & MFSESSIONCAP_SEEK) != 0) {
+			is_video_seekable = true;
+		}
+
+		IMFClock* clock;
+		if (SUCCEEDED(m_pSession->GetClock(&clock))) {
+			CHECK_HR(clock->QueryInterface(IID_PPV_ARGS(&presentation_clock)));
+		}
 
 		m_pCallback->SetFrameSize(stream_info.size.x, stream_info.size.y);
-
 		frame_data.resize(stream_info.size.x * stream_info.size.y * 4);
 		texture->create(stream_info.size.x, stream_info.size.y, Image::FORMAT_RGBA8, Texture::FLAG_FILTER | Texture::FLAG_VIDEO_SURFACE);
 	}
@@ -352,10 +381,13 @@ void VideoStreamPlaybackWMF::update(float p_delta) {
 				hr = pEvent->GetType(&met);
 				if (hr == S_OK) {
 					if (met == MESessionEnded) {
+
 						// We're done playing
 						SafeRelease(pEvent);
 						m_pSession->Shutdown();
 						SafeRelease(m_pSession);
+
+						is_video_playing = false;
 						return;
 					}
 				}
@@ -366,6 +398,7 @@ void VideoStreamPlaybackWMF::update(float p_delta) {
 		mtx.lock();
 		Ref<Image> img = memnew(Image(stream_info.size.x, stream_info.size.y, 0, Image::FORMAT_RGBA8, frame_data)); //zero copy image creation
 		mtx.unlock();
+		
 		texture->set_data(img); //zero copy send to visual server
 	}
 }
@@ -392,8 +425,10 @@ VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
 : m_pSession(NULL)
 , m_pSource(NULL)
 , m_pTopology(NULL)
+, presentation_clock(NULL)
 , is_video_playing(false)
 , is_video_paused(false)
+, is_video_seekable(false)
 , video_duration(0) {
     print_line(__FUNCTION__);
 
@@ -407,6 +442,12 @@ VideoStreamPlaybackWMF::~VideoStreamPlaybackWMF() {
 		m_pSession->Stop();
         m_pSession->Shutdown();
     }
+
+	delete m_pCallback;
+
+	SafeRelease(m_pTopology);
+	SafeRelease(m_pSource);
+	SafeRelease(m_pSession);
 }
 
 

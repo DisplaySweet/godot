@@ -18,6 +18,7 @@ class VideoStreamPlaybackWMF : public VideoStreamPlayback {
 	IMFMediaSession *m_pSession;
 	IMFMediaSource *m_pSource;
 	IMFTopology *m_pTopology;
+	IMFPresentationClock* presentation_clock;
 	SampleGrabberCallback* m_pCallback;
 
 	PoolVector<uint8_t> frame_data;
@@ -26,6 +27,7 @@ class VideoStreamPlaybackWMF : public VideoStreamPlayback {
 
 	bool is_video_playing;
 	bool is_video_paused;
+	bool is_video_seekable;
 	int64_t video_duration;
 
 public:
