@@ -30,10 +30,11 @@ HRESULT AddSourceNode(IMFTopology* pTopology, IMFMediaSource* pSource,
 	CHECK_HR(pNode->SetUnknown(MF_TOPONODE_STREAM_DESCRIPTOR, pSD));
 	CHECK_HR(pTopology->AddNode(pNode));
 
-	*ppNode = pNode;
-	(*ppNode)->AddRef();
-
-done:
+	if (SUCCEEDED(hr))
+	{
+		*ppNode = pNode;
+		(*ppNode)->AddRef();
+	}
 	SafeRelease(pNode);
 	return hr;
 }
@@ -59,7 +60,7 @@ HRESULT AddOutputNode(IMFTopology *pTopology,     // Topology.
 		*ppNode = pNode;
 		(*ppNode)->AddRef();
 	}
-done:
+
 	SafeRelease(pNode);
 	return hr;
 }
@@ -141,10 +142,11 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 		SafeRelease(pHandler);
 	}
 
-	*ppTopo = pTopology;
-	(*ppTopo)->AddRef();
-
-done:
+	if (SUCCEEDED(hr))
+	{
+		*ppTopo = pTopology;
+		(*ppTopo)->AddRef();
+	}
 	SafeRelease(pTopology);
 	SafeRelease(inputNode);
 	SafeRelease(outputNode);
@@ -167,16 +169,20 @@ HRESULT CreateMediaSource(const String &p_file, IMFMediaSource** pMediaSource) {
 
 	print_line("Original File:" + p_file);
 
-	FileAccess* fa = FileAccess::open(p_file, FileAccess::READ);
+	Error e;
+	FileAccess* fa = FileAccess::open(p_file, FileAccess::READ, &e);
+
+	if (e != OK) {
+		return;
+	}
+
 	String absolute_path = fa->get_path_absolute();
 	fa->close();
 	print_line("Absolute Path: " + absolute_path);
 
-	//wchar_t* sFile = L"file://D:\\Godot\\Workspace\\VideoPlayback\\Vue Broadbeach Promo 1 V2.mp4";
 	MF_OBJECT_TYPE ObjectType;
-	CHECK_HR(pSourceResolver->CreateObjectFromURL(absolute_path.c_str(), // p_file.c_str(),
+	CHECK_HR(pSourceResolver->CreateObjectFromURL(absolute_path.c_str(),
 											  MF_RESOLUTION_MEDIASOURCE, nullptr, &ObjectType, &pSource));
-
 	CHECK_HR(pSource->QueryInterface(IID_PPV_ARGS(pMediaSource)));
 
 	SafeRelease(pSourceResolver);
@@ -205,8 +211,6 @@ void VideoStreamPlaybackWMF::stop() {
     print_line(__FUNCTION__);
 
 	HRESULT hr = S_OK;
-	PROPVARIANT var;
-	PropVariantInit(&var);
 	CHECK_HR(m_pSession->Stop());
 
 	if (SUCCEEDED(hr))
@@ -223,10 +227,17 @@ bool VideoStreamPlaybackWMF::is_playing() const {
 void VideoStreamPlaybackWMF::set_paused(bool p_paused) {
     print_line(__FUNCTION__ ": " + itos(p_paused));
 	is_video_paused = p_paused;
+
+	HRESULT hr = S_OK;
 	if (p_paused)
 	{
-		HRESULT hr = S_OK;
 		CHECK_HR(m_pSession->Pause());
+	}
+	else
+	{
+		PROPVARIANT var;
+		PropVariantInit(&var);
+		CHECK_HR(m_pSession->Start(&GUID_NULL, &var));
 	}
 }
 
@@ -251,7 +262,7 @@ float VideoStreamPlaybackWMF::get_length() const {
 
 String VideoStreamPlaybackWMF::get_stream_name() const {
     print_line(__FUNCTION__);
-    return String("The Movie!");
+    return String("A mp4 video");
 }
 
 int VideoStreamPlaybackWMF::get_loop_count() const {
@@ -290,9 +301,6 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 
 	CHECK_HR(CreateMediaSource(p_file, &m_pSource));
 	CHECK_HR(CreateTopology(m_pSource, pSinkActivate, &m_pTopology, &stream_info));
-
-	PROPVARIANT var;
-	PropVariantInit(&var);
 
 	CHECK_HR(m_pSession->SetTopology(0, m_pTopology));
 
@@ -393,9 +401,10 @@ VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
 }
 
 VideoStreamPlaybackWMF::~VideoStreamPlaybackWMF() {
-
     print_line(__FUNCTION__);
-    if (m_pSession != nullptr) {
+
+    if (m_pSession) {
+		m_pSession->Stop();
         m_pSession->Shutdown();
     }
 }
@@ -421,7 +430,6 @@ Ref<VideoStreamPlayback> VideoStreamWMF::instance_playback() {
 void VideoStreamWMF::set_file(const String& p_file) {
     print_line(__FUNCTION__ ": " + p_file);
 
-	HRESULT hr = S_OK;
     file = p_file;
 }
 
