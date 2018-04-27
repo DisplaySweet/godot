@@ -341,7 +341,7 @@ if selected_platform in platform_list:
         else: # 'no'
             env.Append(CCFLAGS=['/w'])
         # Set exception handling model to avoid warnings caused by Windows system headers.
-        env.Append(CCFLAGS=['/EHsc', '/O2'])
+        env.Append(CCFLAGS=['/EHsc'])
     else: # Rest of the world
         if (env["warnings"] == 'extra'):
             env.Append(CCFLAGS=['-Wall', '-Wextra'])
