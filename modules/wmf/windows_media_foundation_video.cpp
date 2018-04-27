@@ -5,6 +5,7 @@
 #include <mfidl.h>
 #include "sample_grabber_callback.h"
 #include <thirdparty/misc/yuv2rgb.h>
+#include "os/file_access.h"
 
 
 #pragma comment(lib, "mfreadwrite")
@@ -164,9 +165,16 @@ HRESULT CreateMediaSource(const String &p_file, IMFMediaSource** pMediaSource) {
 	HRESULT hr = S_OK;
 	CHECK_HR(MFCreateSourceResolver(&pSourceResolver));
 
-	wchar_t* sFile = L"file://D:\\Godot\\Workspace\\VideoPlayback\\OneBarangaroo_Film_TV.mp4";
+	print_line("Original File:" + p_file);
+
+	FileAccess* fa = FileAccess::open(p_file, FileAccess::READ);
+	String absolute_path = fa->get_path_absolute();
+	fa->close();
+	print_line("Absolute Path: " + absolute_path);
+
+	//wchar_t* sFile = L"file://D:\\Godot\\Workspace\\VideoPlayback\\Vue Broadbeach Promo 1 V2.mp4";
 	MF_OBJECT_TYPE ObjectType;
-	CHECK_HR(pSourceResolver->CreateObjectFromURL( sFile, // p_file.c_str(),
+	CHECK_HR(pSourceResolver->CreateObjectFromURL(absolute_path.c_str(), // p_file.c_str(),
 											  MF_RESOLUTION_MEDIASOURCE, nullptr, &ObjectType, &pSource));
 
 	CHECK_HR(pSource->QueryInterface(IID_PPV_ARGS(pMediaSource)));
