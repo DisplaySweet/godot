@@ -4,13 +4,14 @@
 #include "io/resource_loader.h"
 #include "scene/resources/video_stream.h"
 #include "os/thread_safe.h"
-#include <mfidl.h>
+
 
 
 class SampleGrabberCallback;
 class IMFMediaSession;
 class IMFMediaSource;
 class IMFTopology;
+class IMFPresentationClock;
 
 class VideoStreamPlaybackWMF : public VideoStreamPlayback {
     GDCLASS(VideoStreamPlaybackWMF, VideoStreamPlayback);
