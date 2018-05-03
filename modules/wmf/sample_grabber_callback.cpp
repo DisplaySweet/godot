@@ -1,7 +1,8 @@
 #include "sample_grabber_callback.h"
 #include <new>
-#include <Shlwapi.h>
 #include <cstdio>
+#include <Shlwapi.h>
+#include <mfapi.h>
 #include "print_string.h"
 #include <thirdparty/misc/yuv2rgb.h>
 
@@ -106,6 +107,10 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType,
                                                     const BYTE* pSampleBuffer,
                                                     DWORD dwSampleSize)
 {
+	if (guidMajorMediaType == MFMediaType_Video)
+	{
+        return S_OK;
+	}
     frame_data2.resize(frame_data->size());
 
     PoolVector<uint8_t>::Write w = frame_data2.write();

@@ -193,16 +193,20 @@ HRESULT CreateMediaSource(const String &p_file, IMFMediaSource** pMediaSource) {
 
 void VideoStreamPlaybackWMF::shutdown_stream() {
 
+	if (media_source) {
+		media_source->Stop();
+		media_source->Shutdown();
+	}
 	if (media_session) {
 		media_session->Stop();
 		media_session->Shutdown();
 	}
 
-	//SafeRelease(sample_grabber_callback);
 	SafeRelease(topology);
 	SafeRelease(media_source);
 	SafeRelease(media_session);
 	SafeRelease(presentation_clock);
+	//SafeRelease(sample_grabber_callback);
 
 	is_video_playing = false;
 	is_video_paused = false;
