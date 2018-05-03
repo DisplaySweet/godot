@@ -20,6 +20,7 @@ class SampleGrabberCallback : public IMFSampleGrabberSinkCallback {
 
 public:
 	static HRESULT CreateInstance(SampleGrabberCallback **ppCB, PoolVector<uint8_t>* frame_data, ThreadSafe* mtx);
+	~SampleGrabberCallback();
 
 	// IUnknown methods
 	STDMETHODIMP QueryInterface(REFIID iid, void **ppv);

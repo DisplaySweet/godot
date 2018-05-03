@@ -29,7 +29,8 @@ class VideoStreamPlaybackWMF : public VideoStreamPlayback {
 	bool is_video_playing;
 	bool is_video_paused;
 	bool is_video_seekable;
-	int64_t video_duration;
+
+	void shutdown_stream();
 
 public:
 	struct StreamInfo
@@ -70,7 +71,7 @@ public:
     virtual void set_audio_track(int p_idx);
 
     VideoStreamPlaybackWMF();
-    ~VideoStreamPlaybackWMF();    
+    ~VideoStreamPlaybackWMF();
 };
 
 class VideoStreamWMF : public VideoStream {

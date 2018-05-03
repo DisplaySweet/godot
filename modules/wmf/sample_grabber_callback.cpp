@@ -25,6 +25,10 @@ HRESULT SampleGrabberCallback::CreateInstance(SampleGrabberCallback** ppCB, Pool
     return S_OK;
 }
 
+SampleGrabberCallback::~SampleGrabberCallback() {
+    print_line(__FUNCTION__);
+}
+
 STDMETHODIMP SampleGrabberCallback::QueryInterface(REFIID riid, void** ppv)
 {
     print_line(__FUNCTION__);

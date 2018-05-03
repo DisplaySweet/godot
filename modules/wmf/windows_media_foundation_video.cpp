@@ -182,13 +182,35 @@ HRESULT CreateMediaSource(const String &p_file, IMFMediaSource** pMediaSource) {
 
 	MF_OBJECT_TYPE ObjectType;
 	CHECK_HR(pSourceResolver->CreateObjectFromURL(absolute_path.c_str(),
-											  MF_RESOLUTION_MEDIASOURCE, nullptr, &ObjectType, &pSource));
+												  MF_RESOLUTION_MEDIASOURCE, nullptr, &ObjectType, &pSource));
 	CHECK_HR(pSource->QueryInterface(IID_PPV_ARGS(pMediaSource)));
 
 	SafeRelease(pSourceResolver);
 	SafeRelease(pSource);
 
 	return hr;
+}
+
+void VideoStreamPlaybackWMF::shutdown_stream() {
+
+	if (media_session) {
+		media_session->Stop();
+		media_session->Shutdown();
+	}
+
+	//SafeRelease(sample_grabber_callback);
+	SafeRelease(topology);
+	SafeRelease(media_source);
+	SafeRelease(media_session);
+	SafeRelease(presentation_clock);
+
+	is_video_playing = false;
+	is_video_paused = false;
+	is_video_seekable = false;
+
+	stream_info.size = Point2i(0, 0);
+	stream_info.fps = 0;
+	stream_info.duration = 0;
 }
 
 void VideoStreamPlaybackWMF::play() {
@@ -204,7 +226,6 @@ void VideoStreamPlaybackWMF::play() {
 
 	if (SUCCEEDED(hr))
 	{
-		print_line("Play!");
 		is_video_playing = true;
 	}
 }
@@ -302,6 +323,8 @@ void VideoStreamPlaybackWMF::seek(float p_time) {
 void VideoStreamPlaybackWMF::set_file(const String &p_file) {
     print_line(__FUNCTION__ ": " + p_file);
 
+	shutdown_stream();
+
 	HRESULT hr = S_OK;
 
     IMFMediaType* pType = nullptr;
@@ -367,27 +390,28 @@ void VideoStreamPlaybackWMF::update(float p_delta) {
 		return;
 	}
 
-	if (media_session) {
-
+	if (media_session)
+	{
 		HRESULT hr = S_OK;
 		HRESULT hrStatus = S_OK;
-		MediaEventType met;
+		MediaEventType met = 0;
 		IMFMediaEvent* pEvent = nullptr;
 
 		hr = media_session->GetEvent(MF_EVENT_FLAG_NO_WAIT, &pEvent);
-		if ( hr == S_OK) {
+		if (SUCCEEDED(hr))
+		{
 			hr = pEvent->GetStatus(&hrStatus);
-			if (hr == S_OK) {
+			if (SUCCEEDED(hr))
+			{
 				hr = pEvent->GetType(&met);
-				if (hr == S_OK) {
-					if (met == MESessionEnded) {
-
+				if (SUCCEEDED(hr))
+				{
+					if (met == MESessionEnded)
+					{
 						// We're done playing
-						SafeRelease(pEvent);
-						media_session->Shutdown();
-						SafeRelease(media_session);
-
+						media_session->Stop();
 						is_video_playing = false;
+						SafeRelease(pEvent);
 						return;
 					}
 				}
@@ -428,8 +452,7 @@ VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
 , presentation_clock(NULL)
 , is_video_playing(false)
 , is_video_paused(false)
-, is_video_seekable(false)
-, video_duration(0) {
+, is_video_seekable(false) {
     print_line(__FUNCTION__);
 
 	texture = Ref<ImageTexture>(memnew(ImageTexture));
@@ -438,16 +461,7 @@ VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
 VideoStreamPlaybackWMF::~VideoStreamPlaybackWMF() {
     print_line(__FUNCTION__);
 
-    if (media_session) {
-		media_session->Stop();
-        media_session->Shutdown();
-    }
-
-	delete sample_grabber_callback;
-
-	SafeRelease(topology);
-	SafeRelease(media_source);
-	SafeRelease(media_session);
+	shutdown_stream();
 }
 
 
