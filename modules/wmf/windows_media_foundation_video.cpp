@@ -13,7 +13,7 @@
 #pragma comment(lib, "mfuuid")
 
 
-#define CHECK_HR(func) if (SUCCEEDED(hr)) { hr = (func); if (FAILED(hr)) { DebugBreak(); } }
+#define CHECK_HR(func) if (SUCCEEDED(hr)) { hr = (func); if (FAILED(hr)) { print_line("failed, return:" + itos(hr)); } }
 #define SafeRelease(p) { if (p) { (p)->Release(); (p)=nullptr; } }
 
 
