@@ -321,6 +321,10 @@ void VideoStreamPlaybackWMF::seek(float p_time) {
 		varStart.vt = VT_I8;
 		varStart.hVal.QuadPart = (MFTIME)p_time;
 		CHECK_HR(media_session->Start(NULL, &varStart));
+
+		if (is_video_paused) {
+			media_session->Pause();
+		}
 	}
 }
 
