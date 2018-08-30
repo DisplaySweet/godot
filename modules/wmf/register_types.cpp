@@ -14,7 +14,6 @@ void register_wmf_types() {
 	ResourceFormatImporter::get_singleton()->add_importer(wmfv_import);
 #endif
     ClassDB::register_class<VideoStreamWMF>();
-//    ClassDB::register_class<VideoStreamPlaybackWMF>();
 }
 
 void unregister_wmf_types() {
