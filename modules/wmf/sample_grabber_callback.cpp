@@ -1,6 +1,7 @@
 #include "sample_grabber_callback.h"
 #include <new>
 #include <cstdio>
+#include <cassert>
 #include <Shlwapi.h>
 #include <mfapi.h>
 #include "print_string.h"
@@ -109,48 +110,33 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType,
 {
 	if (guidMajorMediaType == MFMediaType_Video)
 	{
-        return S_OK;
+        //return S_OK;
 	}
-    frame_data2.resize(frame_data->size());
-
-    PoolVector<uint8_t>::Write w = frame_data2.write();
-    char *rgb_buffer = (char *)w.ptr();
-
-	BYTE* pSampleBufferY = (BYTE*)pSampleBuffer;
-
-	size_t UOffset2 = (((height + 15) & ~15) * width);
-	BYTE* pSampleBufferU = pSampleBufferY + UOffset2;
-
-	size_t VOffset2 = ((((height / 2) + 7) & ~7) * (width / 2));
-	BYTE* pSampleBufferV = pSampleBufferU + VOffset2;
-
-	/*
-	void yuv420_2_rgb8888(
-		uint8_t  *dst_ptr_,
-		const uint8_t  *y_ptr,
-		const uint8_t  *u_ptr,
-		const uint8_t  *v_ptr,
-		int32_t   width,
-		int32_t   height,
-		int32_t   y_span,
-		int32_t   uv_span,
-		int32_t   dst_span,
-		int32_t   dither)
-	*/
-	yuv420_2_rgb8888((uint8_t *)rgb_buffer,
-				     (uint8_t *)pSampleBufferY,
-					 (uint8_t *)pSampleBufferV,
-					 (uint8_t *)pSampleBufferU,
-					 width, height,
-					 width,
-					 width / 2,
-					 width * 4, 0);
-
+    assert(frame_data->size() == width * height * 3);
 	mtx->lock();
 	{
 		uint8_t* dst = frame_data->write().ptr();
-		const uint8_t* src = frame_data2.read().ptr();
-		memcpy(dst, src, frame_data2.size());
+
+		char *rgb_buffer = (char *)dst;
+		// convert 4 pixels at once
+		for (int i = 0; i < dwSampleSize; i += 12) {
+
+			rgb_buffer[i + 0] = pSampleBuffer[i + 2];
+			rgb_buffer[i + 1] = pSampleBuffer[i + 1];
+			rgb_buffer[i + 2] = pSampleBuffer[i + 0];
+
+			rgb_buffer[i + 3] = pSampleBuffer[i + 5];
+			rgb_buffer[i + 4] = pSampleBuffer[i + 4];
+			rgb_buffer[i + 5] = pSampleBuffer[i + 3];
+
+			rgb_buffer[i + 6] = pSampleBuffer[i + 8];
+			rgb_buffer[i + 7] = pSampleBuffer[i + 7];
+			rgb_buffer[i + 8] = pSampleBuffer[i + 6];
+
+			rgb_buffer[i + 9] = pSampleBuffer[i + 11];
+			rgb_buffer[i + 10] = pSampleBuffer[i + 10];
+			rgb_buffer[i + 11] = pSampleBuffer[i + 9];
+		}
 	}
     mtx->unlock();
     return S_OK;
