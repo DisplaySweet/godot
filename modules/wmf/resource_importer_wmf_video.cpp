@@ -14,6 +14,7 @@ String ResourceImporterWMFVideo::get_visible_name() const {
 
 void ResourceImporterWMFVideo::get_recognized_extensions(List<String> *p_extensions) const {
     p_extensions->push_back("mp4");
+	p_extensions->push_back("wmv");
 }
 
 String ResourceImporterWMFVideo::get_save_extension() const {

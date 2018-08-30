@@ -6,14 +6,15 @@
 #include "sample_grabber_callback.h"
 #include <thirdparty/misc/yuv2rgb.h>
 #include "os/file_access.h"
+#include <wmcodecdsp.h>
 
-
+#pragma comment(lib, "wmcodecdspuuid.lib")
 #pragma comment(lib, "mfreadwrite")
 #pragma comment(lib, "mfplat")
 #pragma comment(lib, "mfuuid")
 
 
-#define CHECK_HR(func) if (SUCCEEDED(hr)) { hr = (func); if (FAILED(hr)) { print_line("failed, return:" + itos(hr)); } }
+#define CHECK_HR(func) if (SUCCEEDED(hr)) { hr = (func); if (FAILED(hr)) { print_line(__FUNCTION__ " failed, return:" + itos(hr)); } }
 #define SafeRelease(p) { if (p) { (p)->Release(); (p)=nullptr; } }
 
 
@@ -65,6 +66,55 @@ HRESULT AddOutputNode(IMFTopology *pTopology,     // Topology.
 	return hr;
 }
 
+HRESULT AddColourConversionNode(IMFTopology *pTopology,
+								IMFMediaType *inputType,
+								IMFTopologyNode **ppNode) {
+	HRESULT hr = S_OK;
+
+	IMFTransform *colorTransform;
+	CoCreateInstance(CLSID_CColorConvertDMO, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&colorTransform));
+
+	IMFMediaType *pInType = nullptr;
+
+	UINT32 uWidth, uHeight;
+	MFGetAttributeSize(inputType, MF_MT_FRAME_SIZE, &uWidth, &uHeight);
+	UINT32 interlaceMode;
+	inputType->GetUINT32(MF_MT_INTERLACE_MODE, &interlaceMode);
+
+	CHECK_HR(MFCreateMediaType(&pInType));
+	CHECK_HR(pInType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video));
+	CHECK_HR(pInType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_I420));
+	CHECK_HR(MFSetAttributeSize(pInType, MF_MT_FRAME_SIZE, uWidth, uHeight));
+
+
+	HRESULT hr_in = (colorTransform->SetInputType(0, pInType, 0));
+
+	IMFMediaType *pOutType = nullptr;
+	CHECK_HR(MFCreateMediaType(&pOutType));
+
+	hr = pOutType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+	hr = pOutType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_RGB24);
+	CHECK_HR(MFSetAttributeSize(pOutType, MF_MT_FRAME_SIZE, uWidth, uHeight));
+
+
+	HRESULT hr_out = (colorTransform->SetOutputType(0, pOutType, 0));
+
+	IMFTopologyNode *pColourConversionNode = NULL;
+	CHECK_HR(MFCreateTopologyNode(MF_TOPOLOGY_TRANSFORM_NODE, &pColourConversionNode));
+
+	pColourConversionNode->SetObject(colorTransform);
+
+	CHECK_HR(pTopology->AddNode(pColourConversionNode));
+
+	if (SUCCEEDED(hr)) {
+		*ppNode = pColourConversionNode;
+		(*ppNode)->AddRef();
+	}
+	SafeRelease(pColourConversionNode);
+
+	return hr;
+}
+
 
 // Create the topology.
 HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFTopology **ppTopo, VideoStreamPlaybackWMF::StreamInfo *info)
@@ -75,6 +125,7 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 	IMFMediaTypeHandler *pHandler = NULL;
 	IMFTopologyNode *inputNode = NULL;
 	IMFTopologyNode *outputNode = NULL;
+	IMFTopologyNode *colorNode = NULL;
 	IMFTopologyNode *inputNodeAudio = NULL;
 	IMFTopologyNode *outputNodeAudio = NULL;
 	IMFActivate* audioActivate = NULL;
@@ -106,7 +157,10 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 			CHECK_HR(pHandler->GetMediaTypeByIndex(0, &pType));
 			CHECK_HR(AddSourceNode(pTopology, pSource, pPD, pSD,&inputNode));
 			CHECK_HR(AddOutputNode(pTopology, pSinkActivate, 0, &outputNode));
-			CHECK_HR(inputNode->ConnectOutput(0, outputNode, 0));
+			CHECK_HR(AddColourConversionNode(pTopology, pType, &colorNode));
+
+			CHECK_HR(inputNode->ConnectOutput(0, colorNode, 0));
+			CHECK_HR(colorNode->ConnectOutput(0, outputNode, 0));
 
 			UINT32 width, height;
 			MFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &width, &height);
@@ -339,8 +393,8 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 	
 	CHECK_HR(MFCreateMediaType(&pType));
     CHECK_HR(pType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video));
-	CHECK_HR(pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264));
-	CHECK_HR(pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_I420));
+	//CHECK_HR(pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264));
+	CHECK_HR(pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_RGB24));
 
 	IMFActivate* pSinkActivate = nullptr;
 
@@ -377,8 +431,8 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 		}
 
 		sample_grabber_callback->set_frame_size(stream_info.size.x, stream_info.size.y);
-		frame_data.resize(stream_info.size.x * stream_info.size.y * 4);
-		texture->create(stream_info.size.x, stream_info.size.y, Image::FORMAT_RGBA8, Texture::FLAG_FILTER | Texture::FLAG_VIDEO_SURFACE);
+		frame_data.resize(stream_info.size.x * stream_info.size.y * 3);
+		texture->create(stream_info.size.x, stream_info.size.y, Image::FORMAT_RGB8, Texture::FLAG_FILTER | Texture::FLAG_VIDEO_SURFACE);
 	}
 	else
 	{
@@ -428,7 +482,7 @@ void VideoStreamPlaybackWMF::update(float p_delta) {
 		SafeRelease(pEvent);
 
 		mtx.lock();
-		Ref<Image> img = memnew(Image(stream_info.size.x, stream_info.size.y, 0, Image::FORMAT_RGBA8, frame_data)); //zero copy image creation
+		Ref<Image> img = memnew(Image(stream_info.size.x, stream_info.size.y, 0, Image::FORMAT_RGB8, frame_data)); //zero copy image creation
 		mtx.unlock();
 		
 		texture->set_data(img); //zero copy send to visual server
