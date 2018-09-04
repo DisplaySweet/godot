@@ -5,7 +5,9 @@
 #include <Shlwapi.h>
 #include <mfapi.h>
 #include "print_string.h"
-#include <thirdparty/misc/yuv2rgb.h>
+
+
+#define CHECK_HR(func) if (SUCCEEDED(hr)) { hr = (func); if (FAILED(hr)) { print_line(__FUNCTION__ " failed, return:" + itos(hr)); } }
 
 SampleGrabberCallback::SampleGrabberCallback(PoolVector<uint8_t>* frame_data, ThreadSafe* mtx)
 : frame_data(frame_data)
@@ -101,6 +103,24 @@ STDMETHODIMP SampleGrabberCallback::OnSetPresentationClock(IMFPresentationClock*
     return S_OK;
 }
 
+HRESULT SampleGrabberCallback::CreateMediaSample(DWORD cbData, IMFSample **ppSample) {
+	assert(ppSample);
+
+	HRESULT hr = S_OK;
+
+	IMFSample *pSample = nullptr;
+	IMFMediaBuffer *pBuffer = nullptr;
+
+	CHECK_HR(hr = MFCreateSample(&pSample));
+	CHECK_HR(hr = MFCreateMemoryBuffer(cbData, &pBuffer));
+	CHECK_HR(hr = pSample->AddBuffer(pBuffer));
+
+	*ppSample = pSample;
+	(*ppSample)->AddRef();
+
+	return hr;
+}
+
 STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType,
                                                     DWORD dwSampleFlags,
                                                     LONGLONG llSampleTime,
@@ -108,37 +128,75 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType,
                                                     const BYTE* pSampleBuffer,
                                                     DWORD dwSampleSize)
 {
-	if (guidMajorMediaType == MFMediaType_Video)
-	{
-        //return S_OK;
-	}
+	HRESULT hr = S_OK;
     assert(frame_data->size() == width * height * 3);
+
+	if (m_pSample == nullptr) CreateMediaSample(dwSampleSize, &m_pSample);
+	if (m_pOutSample == nullptr) CreateMediaSample(frame_data->size(), &m_pOutSample);
+
+	IMFMediaBuffer *pMediaBuffer = nullptr;
+	m_pSample->SetSampleTime(llSampleTime);
+	m_pSample->SetSampleDuration(llSampleDuration);
+	m_pSample->GetBufferByIndex(0, &pMediaBuffer);
+
+	BYTE *pData = nullptr;
+	pMediaBuffer->Lock(&pData, NULL, NULL);
+	{
+		memcpy(pData, pSampleBuffer, dwSampleSize);
+		hr = pMediaBuffer->SetCurrentLength(dwSampleSize);
+	}
+	pMediaBuffer->Unlock();
+
+	DWORD ProcessStatus;
+	CHECK_HR(m_pColorTransform->ProcessInput(0, m_pSample, 0));
+	if (FAILED(hr))
+		print_line("Failed to process video frames");
+
+	MFT_OUTPUT_DATA_BUFFER RGBOutputDataBuffer;
+	RGBOutputDataBuffer.dwStreamID = 0;
+	RGBOutputDataBuffer.dwStatus = 0;
+	RGBOutputDataBuffer.pEvents = NULL;
+	RGBOutputDataBuffer.pSample = m_pOutSample;
+	CHECK_HR(m_pColorTransform->ProcessOutput(0, 1, &RGBOutputDataBuffer, &ProcessStatus));
+	if (FAILED(hr))
+		print_line("Failed to process video frames");
+
+	IMFMediaBuffer *pOutputBuffer;
+	RGBOutputDataBuffer.pSample->GetBufferByIndex(0, &pOutputBuffer);
+
+	BYTE *outData;
+	DWORD outDataLen;
+	pOutputBuffer->Lock(&outData, NULL, &outDataLen);
+
 	mtx->lock();
 	{
 		uint8_t* dst = frame_data->write().ptr();
 
 		char *rgb_buffer = (char *)dst;
 		// convert 4 pixels at once
-		for (int i = 0; i < dwSampleSize; i += 12) {
+		for (int i = 0; i < outDataLen; i += 12) {
 
-			rgb_buffer[i + 0] = pSampleBuffer[i + 2];
-			rgb_buffer[i + 1] = pSampleBuffer[i + 1];
-			rgb_buffer[i + 2] = pSampleBuffer[i + 0];
+			rgb_buffer[i + 0] = outData[i + 2];
+			rgb_buffer[i + 1] = outData[i + 1];
+			rgb_buffer[i + 2] = outData[i + 0];
 
-			rgb_buffer[i + 3] = pSampleBuffer[i + 5];
-			rgb_buffer[i + 4] = pSampleBuffer[i + 4];
-			rgb_buffer[i + 5] = pSampleBuffer[i + 3];
+			rgb_buffer[i + 3] = outData[i + 5];
+			rgb_buffer[i + 4] = outData[i + 4];
+			rgb_buffer[i + 5] = outData[i + 3];
 
-			rgb_buffer[i + 6] = pSampleBuffer[i + 8];
-			rgb_buffer[i + 7] = pSampleBuffer[i + 7];
-			rgb_buffer[i + 8] = pSampleBuffer[i + 6];
+			rgb_buffer[i + 6] = outData[i + 8];
+			rgb_buffer[i + 7] = outData[i + 7];
+			rgb_buffer[i + 8] = outData[i + 6];
 
-			rgb_buffer[i + 9] = pSampleBuffer[i + 11];
-			rgb_buffer[i + 10] = pSampleBuffer[i + 10];
-			rgb_buffer[i + 11] = pSampleBuffer[i + 9];
+			rgb_buffer[i + 9] = outData[i + 11];
+			rgb_buffer[i + 10] = outData[i + 10];
+			rgb_buffer[i + 11] = outData[i + 9];
 		}
+		//memcpy(rgb_buffer, outData, outDataLen);
 	}
     mtx->unlock();
+
+	pOutputBuffer->Unlock();
     return S_OK;
 }
 
