@@ -15,6 +15,10 @@ class SampleGrabberCallback : public IMFSampleGrabberSinkCallback {
 	int width;
 	int height;
 
+	IMFTransform *m_pColorTransform = nullptr;
+	IMFSample *m_pSample = nullptr;
+	IMFSample *m_pOutSample = nullptr;
+
 	SampleGrabberCallback(PoolVector<uint8_t>* frame_data, ThreadSafe* mtx);
 
 public:
@@ -40,8 +44,12 @@ public:
 	                             DWORD dwSampleSize);
 	STDMETHODIMP OnShutdown();
 
+	HRESULT CreateMediaSample(DWORD cbData, IMFSample **ppSample);
+
 	// custom methods
 	void set_frame_size(int w, int h);
+	void set_color_transform(IMFTransform* mft) { m_pColorTransform = mft; }
+
 };
 
 #endif
