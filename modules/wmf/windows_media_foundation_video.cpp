@@ -68,7 +68,7 @@ HRESULT AddOutputNode(IMFTopology *pTopology,     // Topology.
 
 HRESULT AddColourConversionNode(IMFTopology *pTopology,
 								IMFMediaType *inputType,
-								IMFTopologyNode **ppNode) {
+								IMFTransform **ppColorTransform) {
 	HRESULT hr = S_OK;
 
 	IMFTransform *colorTransform;
@@ -83,9 +83,8 @@ HRESULT AddColourConversionNode(IMFTopology *pTopology,
 
 	CHECK_HR(MFCreateMediaType(&pInType));
 	CHECK_HR(pInType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video));
-	CHECK_HR(pInType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_I420));
+	CHECK_HR(pInType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_NV12));
 	CHECK_HR(MFSetAttributeSize(pInType, MF_MT_FRAME_SIZE, uWidth, uHeight));
-
 
 	HRESULT hr_in = (colorTransform->SetInputType(0, pInType, 0));
 
@@ -96,28 +95,31 @@ HRESULT AddColourConversionNode(IMFTopology *pTopology,
 	hr = pOutType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_RGB24);
 	CHECK_HR(MFSetAttributeSize(pOutType, MF_MT_FRAME_SIZE, uWidth, uHeight));
 
-
 	HRESULT hr_out = (colorTransform->SetOutputType(0, pOutType, 0));
 
-	IMFTopologyNode *pColourConversionNode = NULL;
-	CHECK_HR(MFCreateTopologyNode(MF_TOPOLOGY_TRANSFORM_NODE, &pColourConversionNode));
-
-	pColourConversionNode->SetObject(colorTransform);
-
-	CHECK_HR(pTopology->AddNode(pColourConversionNode));
-
-	if (SUCCEEDED(hr)) {
-		*ppNode = pColourConversionNode;
-		(*ppNode)->AddRef();
-	}
-	SafeRelease(pColourConversionNode);
-
+	*ppColorTransform = colorTransform;
 	return hr;
 }
 
+HRESULT CreateSampleGrabber(UINT width, UINT height, SampleGrabberCallback *pSampleGrabber, IMFActivate **pSinkActivate) {
+	HRESULT hr = S_OK;
+	IMFMediaType *pType = NULL;
+
+	CHECK_HR(MFCreateMediaType(&pType));
+	CHECK_HR(pType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video));
+	CHECK_HR(pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_NV12));
+	CHECK_HR(MFSetAttributeSize(pType, MF_MT_FRAME_SIZE, width, height));
+	CHECK_HR(pType->SetUINT32(MF_MT_FIXED_SIZE_SAMPLES, TRUE));
+	CHECK_HR(pType->SetUINT32(MF_MT_ALL_SAMPLES_INDEPENDENT, TRUE));
+	CHECK_HR(MFSetAttributeRatio(pType, MF_MT_PIXEL_ASPECT_RATIO, 1, 1));
+	CHECK_HR(MFCreateSampleGrabberSinkActivate(pType, pSampleGrabber, pSinkActivate));
+
+	SafeRelease(pType);
+	return hr;
+}
 
 // Create the topology.
-HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFTopology **ppTopo, VideoStreamPlaybackWMF::StreamInfo *info)
+HRESULT CreateTopology(IMFMediaSource *pSource, SampleGrabberCallback *pSampleGrabber, IMFTopology **ppTopo, VideoStreamPlaybackWMF::StreamInfo *info)
 {
 	IMFTopology *pTopology = NULL;
 	IMFPresentationDescriptor *pPD = NULL;
@@ -155,15 +157,20 @@ HRESULT CreateTopology(IMFMediaSource *pSource, IMFActivate *pSinkActivate, IMFT
 
 			IMFMediaType* pType = NULL;
 			CHECK_HR(pHandler->GetMediaTypeByIndex(0, &pType));
-			CHECK_HR(AddSourceNode(pTopology, pSource, pPD, pSD,&inputNode));
-			CHECK_HR(AddOutputNode(pTopology, pSinkActivate, 0, &outputNode));
-			CHECK_HR(AddColourConversionNode(pTopology, pType, &colorNode));
-
-			CHECK_HR(inputNode->ConnectOutput(0, colorNode, 0));
-			CHECK_HR(colorNode->ConnectOutput(0, outputNode, 0));
-
 			UINT32 width, height;
 			MFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &width, &height);
+
+			IMFActivate *pSinkActivate = NULL;
+			CHECK_HR(CreateSampleGrabber(width, height, pSampleGrabber, &pSinkActivate));
+			IMFTransform *pColorTransform = NULL;
+			CHECK_HR(AddColourConversionNode(pTopology, pType, &pColorTransform));
+			pSampleGrabber->set_color_transform(pColorTransform);
+
+			CHECK_HR(AddSourceNode(pTopology, pSource, pPD, pSD,&inputNode));
+			CHECK_HR(AddOutputNode(pTopology, pSinkActivate, 0, &outputNode));
+			
+			CHECK_HR(inputNode->ConnectOutput(0, outputNode, 0));
+			//CHECK_HR(colorNode->ConnectOutput(0, outputNode, 0));
 
 			info->size.x = width;
 			info->size.y = height;
@@ -389,23 +396,11 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 
 	HRESULT hr = S_OK;
 
-    IMFMediaType* pType = nullptr;
-	
-	CHECK_HR(MFCreateMediaType(&pType));
-    CHECK_HR(pType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video));
-	//CHECK_HR(pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264));
-	CHECK_HR(pType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_RGB24));
-
-	IMFActivate* pSinkActivate = nullptr;
-
-	// Create the sample grabber sink.
-	CHECK_HR(SampleGrabberCallback::CreateInstance(&sample_grabber_callback, &frame_data, &mtx));
-	CHECK_HR(MFCreateSampleGrabberSinkActivate(pType, sample_grabber_callback, &pSinkActivate));
-
+	CHECK_HR(CreateMediaSource(p_file, &media_source));
 	CHECK_HR(MFCreateMediaSession(nullptr, &media_session));
 
-	CHECK_HR(CreateMediaSource(p_file, &media_source));
-	CHECK_HR(CreateTopology(media_source, pSinkActivate, &topology, &stream_info));
+	CHECK_HR(SampleGrabberCallback::CreateInstance(&sample_grabber_callback, &frame_data, &mtx));
+	CHECK_HR(CreateTopology(media_source, sample_grabber_callback, &topology, &stream_info));
 
 	CHECK_HR(media_session->SetTopology(0, topology));
 
