@@ -1,5 +1,5 @@
 #include "resource_importer_wmf_video.h"
-#include "windows_media_foundation_video.h"
+#include "video_stream_wmf.h"
 
 #include "io/resource_saver.h"
 #include "os/file_access.h"

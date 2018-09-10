@@ -92,6 +92,8 @@ public:
 	void set_stream(const Ref<VideoStream> &p_stream);
 	Ref<VideoStream> get_stream() const;
 
+	Ref<VideoStreamPlayback> get_playback() const;
+
 	void play();
 	void stop();
 	bool is_playing() const;

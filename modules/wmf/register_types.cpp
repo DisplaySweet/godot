@@ -1,6 +1,7 @@
 #include "register_types.h"
-#include "windows_media_foundation_video.h"
+#include "video_stream_wmf.h"
 #include "resource_importer_wmf_video.h"
+#include "wmf_video_syncer.h"
 
 #include <mfapi.h>
 #include <stdio.h>
@@ -14,6 +15,7 @@ void register_wmf_types() {
 	ResourceFormatImporter::get_singleton()->add_importer(wmfv_import);
 #endif
     ClassDB::register_class<VideoStreamWMF>();
+	ClassDB::register_class<VideoSyncerWMF>();
 }
 
 void unregister_wmf_types() {

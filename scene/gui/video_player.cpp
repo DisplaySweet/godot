@@ -259,6 +259,10 @@ Ref<VideoStream> VideoPlayer::get_stream() const {
 	return stream;
 };
 
+Ref<VideoStreamPlayback> VideoPlayer::get_playback() const {
+	return playback;
+}
+
 void VideoPlayer::play() {
 
 	ERR_FAIL_COND(!is_inside_tree());
