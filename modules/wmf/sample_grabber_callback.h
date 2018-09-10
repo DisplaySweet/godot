@@ -1,16 +1,18 @@
 #ifndef SAMPLEGRABBERCALLBACK_H
 #define SAMPLEGRABBERCALLBACK_H
 
+#include "os/thread_safe.h"
 #include "io/resource_loader.h"
 #include "scene/resources/video_stream.h"
-#include "os/thread_safe.h"
-
 #include <mfidl.h>
+
+class VideoStreamPlaybackWMF;
+
 
 class SampleGrabberCallback : public IMFSampleGrabberSinkCallback {
 	
 	long m_cRef;
-	PoolVector<uint8_t>* frame_data;
+	VideoStreamPlaybackWMF* playback;
 	ThreadSafe* mtx;
 	int width;
 	int height;
@@ -19,10 +21,10 @@ class SampleGrabberCallback : public IMFSampleGrabberSinkCallback {
 	IMFSample *m_pSample = nullptr;
 	IMFSample *m_pOutSample = nullptr;
 
-	SampleGrabberCallback(PoolVector<uint8_t>* frame_data, ThreadSafe* mtx);
+	SampleGrabberCallback(VideoStreamPlaybackWMF* playback, ThreadSafe* mtx);
 
 public:
-	static HRESULT CreateInstance(SampleGrabberCallback **ppCB, PoolVector<uint8_t>* frame_data, ThreadSafe* mtx);
+	static HRESULT CreateInstance(SampleGrabberCallback **ppCB, VideoStreamPlaybackWMF* playback, ThreadSafe* mtx);
 	~SampleGrabberCallback();
 
 	// IUnknown methods
