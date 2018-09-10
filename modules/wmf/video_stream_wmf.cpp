@@ -1,4 +1,4 @@
-#include "windows_media_foundation_video.h"
+#include "video_stream_wmf.h"
 
 #include <mfapi.h>
 #include <mferror.h>
@@ -399,7 +399,7 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 	CHECK_HR(CreateMediaSource(p_file, &media_source));
 	CHECK_HR(MFCreateMediaSession(nullptr, &media_session));
 
-	CHECK_HR(SampleGrabberCallback::CreateInstance(&sample_grabber_callback, &frame_data, &mtx));
+	CHECK_HR(SampleGrabberCallback::CreateInstance(&sample_grabber_callback, this, &mtx));
 	CHECK_HR(CreateTopology(media_source, sample_grabber_callback, &topology, &stream_info));
 
 	CHECK_HR(media_session->SetTopology(0, topology));
@@ -426,7 +426,14 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 		}
 
 		sample_grabber_callback->set_frame_size(stream_info.size.x, stream_info.size.y);
-		frame_data.resize(stream_info.size.x * stream_info.size.y * 3);
+		//frame_data.resize(stream_info.size.x * stream_info.size.y * 3);
+
+		const int rgb24_frame_size = stream_info.size.x * stream_info.size.y * 3;
+		cache_frames.resize(10);
+		for (int i = 0; i < cache_frames.size(); ++i) {
+			cache_frames[i].data.resize(rgb24_frame_size);
+		}
+
 		texture->create(stream_info.size.x, stream_info.size.y, Image::FORMAT_RGB8, Texture::FLAG_FILTER | Texture::FLAG_VIDEO_SURFACE);
 	}
 	else
@@ -475,12 +482,13 @@ void VideoStreamPlaybackWMF::update(float p_delta) {
 			}
 		}
 		SafeRelease(pEvent);
-
+		/*
 		mtx.lock();
 		Ref<Image> img = memnew(Image(stream_info.size.x, stream_info.size.y, 0, Image::FORMAT_RGB8, frame_data)); //zero copy image creation
 		mtx.unlock();
-		
 		texture->set_data(img); //zero copy send to visual server
+		*/
+		present();
 	}
 }
 
@@ -502,6 +510,32 @@ void VideoStreamPlaybackWMF::set_audio_track(int p_idx) {
     print_line(__FUNCTION__ ": " + itos(p_idx));
 }
 
+FrameData *VideoStreamPlaybackWMF::get_next_writable_frame() {
+	return &cache_frames[write_frame_idx];
+}
+
+void VideoStreamPlaybackWMF::write_frame_done() {
+	mtx.lock();
+	write_frame_idx = (write_frame_idx + 1) % cache_frames.size();
+	print_line("WriteFrame=" + itos(write_frame_idx));
+	mtx.unlock();
+}
+
+void VideoStreamPlaybackWMF::present() {
+
+	//if (write_frame_idx < 0) return;
+	if (read_frame_idx == write_frame_idx) return;
+
+	FrameData& the_frame = cache_frames[read_frame_idx];
+	Ref<Image> img = memnew(Image(stream_info.size.x, stream_info.size.y, 0, Image::FORMAT_RGB8, the_frame.data)); //zero copy image creation
+	texture->set_data(img); //zero copy send to visual server
+
+	mtx.lock();
+	read_frame_idx = (read_frame_idx + 1) % cache_frames.size();
+	print_line("ReadFrame= " + itos(read_frame_idx));
+	mtx.unlock();
+}
+
 VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
 : media_session(NULL)
 , media_source(NULL)
@@ -509,7 +543,9 @@ VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
 , presentation_clock(NULL)
 , is_video_playing(false)
 , is_video_paused(false)
-, is_video_seekable(false) {
+, is_video_seekable(false)
+, read_frame_idx(0)
+, write_frame_idx(0) {
     print_line(__FUNCTION__);
 
 	texture = Ref<ImageTexture>(memnew(ImageTexture));
