@@ -5,13 +5,17 @@
 #include "scene/resources/video_stream.h"
 #include "os/thread_safe.h"
 
-
+#include <deque>
 
 class SampleGrabberCallback;
 class IMFMediaSession;
 class IMFMediaSource;
 class IMFTopology;
 class IMFPresentationClock;
+
+struct FrameData {
+	PoolVector<uint8_t> data;
+};
 
 class VideoStreamPlaybackWMF : public VideoStreamPlayback {
     GDCLASS(VideoStreamPlaybackWMF, VideoStreamPlayback);
@@ -21,6 +25,10 @@ class VideoStreamPlaybackWMF : public VideoStreamPlayback {
 	IMFTopology *topology;
 	IMFPresentationClock *presentation_clock;
 	SampleGrabberCallback *sample_grabber_callback;
+
+	Vector<FrameData> cache_frames;
+	int read_frame_idx;
+	int write_frame_idx;
 
 	PoolVector<uint8_t> frame_data;
 	Ref<ImageTexture> texture;
@@ -69,6 +77,10 @@ public:
     virtual int get_mix_rate() const;
 
     virtual void set_audio_track(int p_idx);
+
+	FrameData* get_next_writable_frame();
+	void write_frame_done();
+	void present();
 
     VideoStreamPlaybackWMF();
     ~VideoStreamPlaybackWMF();

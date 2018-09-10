@@ -5,22 +5,23 @@
 #include <Shlwapi.h>
 #include <mfapi.h>
 #include "print_string.h"
+#include "video_stream_wmf.h"
 
 
 #define CHECK_HR(func) if (SUCCEEDED(hr)) { hr = (func); if (FAILED(hr)) { print_line(__FUNCTION__ " failed, return:" + itos(hr)); } }
 
-SampleGrabberCallback::SampleGrabberCallback(PoolVector<uint8_t>* frame_data, ThreadSafe* mtx)
-: frame_data(frame_data)
+SampleGrabberCallback::SampleGrabberCallback(VideoStreamPlaybackWMF* playback, ThreadSafe* mtx)
+: playback(playback)
 , mtx(mtx)
 , m_cRef(1)
 {
 }
 
-HRESULT SampleGrabberCallback::CreateInstance(SampleGrabberCallback** ppCB, PoolVector<uint8_t>* frame_data, ThreadSafe* mtx)
+HRESULT SampleGrabberCallback::CreateInstance(SampleGrabberCallback **ppCB, VideoStreamPlaybackWMF* playback, ThreadSafe* mtx)
 {
     print_line(__FUNCTION__);
 
-    *ppCB = new (std::nothrow) SampleGrabberCallback(frame_data, mtx);
+    *ppCB = new (std::nothrow) SampleGrabberCallback(playback, mtx);
 
     if (ppCB == nullptr)
     {
@@ -129,10 +130,11 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType,
                                                     DWORD dwSampleSize)
 {
 	HRESULT hr = S_OK;
-    assert(frame_data->size() == width * height * 3);
+    //assert(frame_data->size() == width * height * 3);
 
+	const int rgb24FrameSize = width * height * 3;
 	if (m_pSample == nullptr) CreateMediaSample(dwSampleSize, &m_pSample);
-	if (m_pOutSample == nullptr) CreateMediaSample(frame_data->size(), &m_pOutSample);
+	if (m_pOutSample == nullptr) CreateMediaSample(rgb24FrameSize, &m_pOutSample);
 
 	IMFMediaBuffer *pMediaBuffer = nullptr;
 	m_pSample->SetSampleTime(llSampleTime);
@@ -168,9 +170,10 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType,
 	DWORD outDataLen;
 	pOutputBuffer->Lock(&outData, NULL, &outDataLen);
 
-	mtx->lock();
+	//mtx->lock();
 	{
-		uint8_t* dst = frame_data->write().ptr();
+		FrameData* frame = playback->get_next_writable_frame();
+		uint8_t* dst = frame->data.write().ptr();
 
 		char *rgb_buffer = (char *)dst;
 		// convert 4 pixels at once
@@ -194,9 +197,12 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType,
 		}
 		//memcpy(rgb_buffer, outData, outDataLen);
 	}
-    mtx->unlock();
+    //mtx->unlock();
 
 	pOutputBuffer->Unlock();
+
+	playback->write_frame_done();
+
     return S_OK;
 }
 
