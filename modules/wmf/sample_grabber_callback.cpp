@@ -173,6 +173,9 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType,
 	//mtx->lock();
 	{
 		FrameData* frame = playback->get_next_writable_frame();
+		frame->sample_time = llSampleTime / 10000;
+		//print_line(itos(llSampleTime));
+
 		uint8_t* dst = frame->data.write().ptr();
 
 		char *rgb_buffer = (char *)dst;

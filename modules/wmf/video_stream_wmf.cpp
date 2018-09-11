@@ -429,7 +429,7 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 		//frame_data.resize(stream_info.size.x * stream_info.size.y * 3);
 
 		const int rgb24_frame_size = stream_info.size.x * stream_info.size.y * 3;
-		cache_frames.resize(10);
+		cache_frames.resize(20);
 		for (int i = 0; i < cache_frames.size(); ++i) {
 			cache_frames[i].data.resize(rgb24_frame_size);
 		}
@@ -482,13 +482,9 @@ void VideoStreamPlaybackWMF::update(float p_delta) {
 			}
 		}
 		SafeRelease(pEvent);
-		/*
-		mtx.lock();
-		Ref<Image> img = memnew(Image(stream_info.size.x, stream_info.size.y, 0, Image::FORMAT_RGB8, frame_data)); //zero copy image creation
-		mtx.unlock();
-		texture->set_data(img); //zero copy send to visual server
-		*/
-		present();
+
+		if (!is_video_sync_enabled)
+			present();
 	}
 }
 
@@ -517,24 +513,32 @@ FrameData *VideoStreamPlaybackWMF::get_next_writable_frame() {
 void VideoStreamPlaybackWMF::write_frame_done() {
 	mtx.lock();
 	write_frame_idx = (write_frame_idx + 1) % cache_frames.size();
-	print_line("WriteFrame=" + itos(write_frame_idx));
+	//print_line(itos(id) + " WriteFrame = " + itos(write_frame_idx));
+	//if (read_frame_idx == write_frame_idx)
+	//	print_line("Chase up!");
 	mtx.unlock();
 }
 
 void VideoStreamPlaybackWMF::present() {
 
-	//if (write_frame_idx < 0) return;
 	if (read_frame_idx == write_frame_idx) return;
 
 	FrameData& the_frame = cache_frames[read_frame_idx];
 	Ref<Image> img = memnew(Image(stream_info.size.x, stream_info.size.y, 0, Image::FORMAT_RGB8, the_frame.data)); //zero copy image creation
 	texture->set_data(img); //zero copy send to visual server
 
+	//print_line(itos(id) + " ReadFrame =    " + itos(read_frame_idx) + ", " + itos(cache_frames[read_frame_idx].sample_time));
+
 	mtx.lock();
 	read_frame_idx = (read_frame_idx + 1) % cache_frames.size();
-	print_line("ReadFrame= " + itos(read_frame_idx));
 	mtx.unlock();
 }
+
+int64_t VideoStreamPlaybackWMF::next_sample_time() {
+	return cache_frames[read_frame_idx].sample_time;
+}
+
+static int counter = 0;
 
 VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
 : media_session(NULL)
@@ -547,6 +551,9 @@ VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
 , read_frame_idx(0)
 , write_frame_idx(0) {
     print_line(__FUNCTION__);
+
+	id = counter;
+	counter++;
 
 	texture = Ref<ImageTexture>(memnew(ImageTexture));
 }

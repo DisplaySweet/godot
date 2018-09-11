@@ -9,18 +9,23 @@ class VideoSyncerWMF : public Node {
 
 	GDCLASS(VideoSyncerWMF, Node);
 
-	PoolVector<VideoStreamPlaybackWMF*> playbacks;
+	Vector<VideoStreamPlaybackWMF*> playbacks;
+	Vector<VideoPlayer*> players;
+
+	bool is_playing = false;
 
 protected:
 	static void _bind_methods();
-	void _notification(int p_what);
 
 public:
 	void add_video(const Node *p_player);
 	void remove_video(const Node *p_player);
+	void clear();
 	void present();
 
 	void play();
+	void stop();
+	void set_paused(bool b);
 
 	VideoSyncerWMF();
 	~VideoSyncerWMF();
