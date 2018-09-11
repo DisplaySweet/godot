@@ -14,6 +14,7 @@ class IMFTopology;
 class IMFPresentationClock;
 
 struct FrameData {
+	int64_t sample_time = 0;
 	PoolVector<uint8_t> data;
 };
 
@@ -37,6 +38,9 @@ class VideoStreamPlaybackWMF : public VideoStreamPlayback {
 	bool is_video_playing;
 	bool is_video_paused;
 	bool is_video_seekable;
+
+	int id = 0;
+	bool is_video_sync_enabled = false;
 
 	void shutdown_stream();
 
@@ -81,6 +85,9 @@ public:
 	FrameData* get_next_writable_frame();
 	void write_frame_done();
 	void present();
+
+	void enable_sync(bool b) { is_video_sync_enabled = b; }
+	int64_t next_sample_time();
 
     VideoStreamPlaybackWMF();
     ~VideoStreamPlaybackWMF();
