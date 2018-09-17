@@ -283,27 +283,31 @@ void VideoStreamPlaybackWMF::play() {
 
 	if (is_video_playing) return;
 
-	HRESULT hr = S_OK;
+	if (media_session) {
+		HRESULT hr = S_OK;
 
-	PROPVARIANT var;
-	PropVariantInit(&var);
-	CHECK_HR(media_session->Start(&GUID_NULL, &var));
+		PROPVARIANT var;
+		PropVariantInit(&var);
+		CHECK_HR(media_session->Start(&GUID_NULL, &var));
 
-	if (SUCCEEDED(hr))
-	{
-		is_video_playing = true;
+		if (SUCCEEDED(hr))
+		{
+			is_video_playing = true;
+		}
 	}
 }
 
 void VideoStreamPlaybackWMF::stop() {
     print_line(__FUNCTION__);
 
-	HRESULT hr = S_OK;
-	CHECK_HR(media_session->Stop());
+	if (media_session) {
+		HRESULT hr = S_OK;
+		CHECK_HR(media_session->Stop());
 
-	if (SUCCEEDED(hr))
-	{
-		is_video_playing = false;
+		if (SUCCEEDED(hr))
+		{
+			is_video_playing = false;
+		}
 	}
 }
 
@@ -316,16 +320,15 @@ void VideoStreamPlaybackWMF::set_paused(bool p_paused) {
     print_line(__FUNCTION__ ": " + itos(p_paused));
 	is_video_paused = p_paused;
 
-	HRESULT hr = S_OK;
-	if (p_paused)
-	{
-		CHECK_HR(media_session->Pause());
-	}
-	else
-	{
-		PROPVARIANT var;
-		PropVariantInit(&var);
-		CHECK_HR(media_session->Start(&GUID_NULL, &var));
+	if (media_session) {
+		HRESULT hr = S_OK;
+		if (p_paused) {
+			CHECK_HR(media_session->Pause());
+		} else {
+			PROPVARIANT var;
+			PropVariantInit(&var);
+			CHECK_HR(media_session->Start(&GUID_NULL, &var));
+		}
 	}
 }
 
@@ -429,7 +432,7 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 		//frame_data.resize(stream_info.size.x * stream_info.size.y * 3);
 
 		const int rgb24_frame_size = stream_info.size.x * stream_info.size.y * 3;
-		cache_frames.resize(20);
+		cache_frames.resize(10);
 		for (int i = 0; i < cache_frames.size(); ++i) {
 			cache_frames[i].data.resize(rgb24_frame_size);
 		}
@@ -512,10 +515,26 @@ FrameData *VideoStreamPlaybackWMF::get_next_writable_frame() {
 
 void VideoStreamPlaybackWMF::write_frame_done() {
 	mtx.lock();
-	write_frame_idx = (write_frame_idx + 1) % cache_frames.size();
-	//print_line(itos(id) + " WriteFrame = " + itos(write_frame_idx));
-	//if (read_frame_idx == write_frame_idx)
-	//	print_line("Chase up!");
+	int next_write_frame_idx = (write_frame_idx + 1) % cache_frames.size();
+
+	if (read_frame_idx == next_write_frame_idx) {
+		//print_line(itos(id) + " Chase up! W:" + itos(write_frame_idx) + " R:" + itos(read_frame_idx));
+
+		// the time gap between videos is larger than the buffer size
+		// need to extend the buffer size
+
+		int current_size = cache_frames.size();
+		cache_frames.resize(current_size + 10);
+
+		const int rgb24_frame_size = stream_info.size.x * stream_info.size.y * 3;
+		for (int i = 0; i < cache_frames.size(); ++i) {
+			cache_frames[i].data.resize(rgb24_frame_size);
+		}
+		next_write_frame_idx = write_frame_idx + 1;
+	}
+
+	write_frame_idx = next_write_frame_idx;
+
 	mtx.unlock();
 }
 
@@ -526,8 +545,6 @@ void VideoStreamPlaybackWMF::present() {
 	FrameData& the_frame = cache_frames[read_frame_idx];
 	Ref<Image> img = memnew(Image(stream_info.size.x, stream_info.size.y, 0, Image::FORMAT_RGB8, the_frame.data)); //zero copy image creation
 	texture->set_data(img); //zero copy send to visual server
-
-	//print_line(itos(id) + " ReadFrame =    " + itos(read_frame_idx) + ", " + itos(cache_frames[read_frame_idx].sample_time));
 
 	mtx.lock();
 	read_frame_idx = (read_frame_idx + 1) % cache_frames.size();
