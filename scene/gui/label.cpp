@@ -409,7 +409,8 @@ void Label::regenerate_word_cache() {
 			if (current_word_size > 0) {
 				WordCache *wc = memnew(WordCache);
 				if (word_cache) {
-					last->next = wc;
+					if (last)
+						last->next = wc;
 				} else {
 					word_cache = wc;
 				}
@@ -456,7 +457,8 @@ void Label::regenerate_word_cache() {
 				if (current_word_size > 0) {
 					WordCache *wc = memnew(WordCache);
 					if (word_cache) {
-						last->next = wc;
+						if (last)
+							last->next = wc;
 					} else {
 						word_cache = wc;
 					}
@@ -474,7 +476,8 @@ void Label::regenerate_word_cache() {
 
 			WordCache *wc = memnew(WordCache);
 			if (word_cache) {
-				last->next = wc;
+				if (last)
+					last->next = wc;
 			} else {
 				word_cache = wc;
 			}
