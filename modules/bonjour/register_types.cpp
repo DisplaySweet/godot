@@ -1,7 +1,6 @@
 /* register_types.cpp */
 
 #include "register_types.h"
-#include "class_db.h"
 #include "bonjour.h"
 
 void register_bonjour_types() {
