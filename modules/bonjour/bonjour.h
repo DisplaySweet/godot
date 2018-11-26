@@ -1,7 +1,7 @@
 #ifndef BONJOUR_H
 #define BONJOUR_H
 
-#include "reference.h"
+#include "core/reference.h"
 #include <string>
 #include "dns_sd.h"
 
