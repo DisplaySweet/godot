@@ -1,8 +1,8 @@
 #include "resource_importer_wmf_video.h"
 #include "video_stream_wmf.h"
 
-#include "io/resource_saver.h"
-#include "os/file_access.h"
+#include "core/io/resource_saver.h"
+#include "core/os/file_access.h"
 
 String ResourceImporterWMFVideo::get_importer_name() const {
     return "WindowsMediaFoundation";
@@ -41,7 +41,7 @@ void ResourceImporterWMFVideo::get_import_options(List<ImportOption> *r_options,
     r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "loop"), true));
 }
 
-Error ResourceImporterWMFVideo::import(const String &p_source_file, const String &p_save_path, const Map<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files) {
+Error ResourceImporterWMFVideo::import(const String &p_source_file, const String &p_save_path, const Map<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata) {
     VideoStreamWMF *stream = memnew(VideoStreamWMF);
     stream->set_file(p_source_file);
 

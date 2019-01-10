@@ -18,8 +18,8 @@ protected:
 	static void _bind_methods();
 
 public:
-	void add_video(const Node *p_player);
-	void remove_video(const Node *p_player);
+	void add_video(Node *const p_player);
+	void remove_video(Node *const p_player);
 	void clear();
 	void present();
 

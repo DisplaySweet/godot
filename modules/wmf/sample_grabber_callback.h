@@ -1,8 +1,8 @@
 #ifndef SAMPLEGRABBERCALLBACK_H
 #define SAMPLEGRABBERCALLBACK_H
 
-#include "os/thread_safe.h"
-#include "io/resource_loader.h"
+#include "core/os/thread_safe.h"
+#include "core/io/resource_loader.h"
 #include "scene/resources/video_stream.h"
 #include <mfidl.h>
 
