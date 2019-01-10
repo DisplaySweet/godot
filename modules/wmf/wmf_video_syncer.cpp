@@ -14,20 +14,20 @@ void VideoSyncerWMF::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_paused", "paused"), &VideoSyncerWMF::set_paused);
 }
 
-void VideoSyncerWMF::add_video(const Node *p_player) {
+void VideoSyncerWMF::add_video(Node *const p_player) {
 
-	auto player = dynamic_cast<const VideoPlayer*>(p_player);
+	auto player = dynamic_cast<VideoPlayer *const>(p_player);
 	if (player) {
 		if (players.find(player) == -1)
 			players.push_back((VideoPlayer*)player);
 	}
 }
 
-void VideoSyncerWMF::remove_video(const Node *p_player) {
+void VideoSyncerWMF::remove_video(Node *const p_player) {
 
 	stop();
 
-	auto player = dynamic_cast<const VideoPlayer*>(p_player);
+	auto player = dynamic_cast<VideoPlayer *const>(p_player);
 	if (player) {
 		int idx = players.find(player);
 		if (idx != -1)
