@@ -4,7 +4,7 @@
 #include <cassert>
 #include <Shlwapi.h>
 #include <mfapi.h>
-#include "print_string.h"
+#include "core/print_string.h"
 #include "video_stream_wmf.h"
 
 
