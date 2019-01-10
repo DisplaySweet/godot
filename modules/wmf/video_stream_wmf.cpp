@@ -5,7 +5,7 @@
 #include <mfidl.h>
 #include "sample_grabber_callback.h"
 #include <thirdparty/misc/yuv2rgb.h>
-#include "os/file_access.h"
+#include "core/os/file_access.h"
 #include <wmcodecdsp.h>
 
 #pragma comment(lib, "wmcodecdspuuid.lib")
@@ -434,7 +434,7 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 		const int rgb24_frame_size = stream_info.size.x * stream_info.size.y * 3;
 		cache_frames.resize(10);
 		for (int i = 0; i < cache_frames.size(); ++i) {
-			cache_frames[i].data.resize(rgb24_frame_size);
+			cache_frames.write[i].data.resize(rgb24_frame_size);
 		}
 
 		texture->create(stream_info.size.x, stream_info.size.y, Image::FORMAT_RGB8, Texture::FLAG_FILTER | Texture::FLAG_VIDEO_SURFACE);
@@ -510,7 +510,7 @@ void VideoStreamPlaybackWMF::set_audio_track(int p_idx) {
 }
 
 FrameData *VideoStreamPlaybackWMF::get_next_writable_frame() {
-	return &cache_frames[write_frame_idx];
+	return &cache_frames.write[write_frame_idx];
 }
 
 void VideoStreamPlaybackWMF::write_frame_done() {
@@ -528,7 +528,7 @@ void VideoStreamPlaybackWMF::write_frame_done() {
 
 		const int rgb24_frame_size = stream_info.size.x * stream_info.size.y * 3;
 		for (int i = 0; i < cache_frames.size(); ++i) {
-			cache_frames[i].data.resize(rgb24_frame_size);
+			cache_frames.write[i].data.resize(rgb24_frame_size);
 		}
 		next_write_frame_idx = write_frame_idx + 1;
 	}
@@ -542,7 +542,7 @@ void VideoStreamPlaybackWMF::present() {
 
 	if (read_frame_idx == write_frame_idx) return;
 
-	FrameData& the_frame = cache_frames[read_frame_idx];
+	FrameData& the_frame = cache_frames.write[read_frame_idx];
 	Ref<Image> img = memnew(Image(stream_info.size.x, stream_info.size.y, 0, Image::FORMAT_RGB8, the_frame.data)); //zero copy image creation
 	texture->set_data(img); //zero copy send to visual server
 
