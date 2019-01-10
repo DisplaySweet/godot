@@ -1,9 +1,9 @@
 #ifndef WINDOWS_MEDIA_FOUNDATION_VIDEO_H
 #define WINDOWS_MEDIA_FOUNDATION_VIDEO_H
 
-#include "io/resource_loader.h"
+#include "core/io/resource_loader.h"
 #include "scene/resources/video_stream.h"
-#include "os/thread_safe.h"
+#include "core/os/thread_safe.h"
 
 #include <deque>
 
