@@ -279,7 +279,7 @@ void VideoStreamPlaybackWMF::shutdown_stream() {
 }
 
 void VideoStreamPlaybackWMF::play() {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
 
 	if (is_video_playing) return;
 
@@ -298,7 +298,7 @@ void VideoStreamPlaybackWMF::play() {
 }
 
 void VideoStreamPlaybackWMF::stop() {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
 
 	if (media_session) {
 		HRESULT hr = S_OK;
@@ -338,26 +338,26 @@ bool VideoStreamPlaybackWMF::is_paused() const {
 }
 
 void VideoStreamPlaybackWMF::set_loop(bool p_enabled) {
-    print_line(__FUNCTION__ ": " + itos(p_enabled));
+    //print_line(__FUNCTION__ ": " + itos(p_enabled));
 }
 
 bool VideoStreamPlaybackWMF::has_loop() const {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
     return false;
 }
 
 float VideoStreamPlaybackWMF::get_length() const {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
     return stream_info.duration;
 }
 
 String VideoStreamPlaybackWMF::get_stream_name() const {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
     return String("A mp4 video");
 }
 
 int VideoStreamPlaybackWMF::get_loop_count() const {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
     return 0;
 }
 
@@ -415,7 +415,7 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 		BOOL bThin = false;
 		float fRate = 0.f;
 		CHECK_HR(m_pRate->GetRate(&bThin, &fRate));
-		print_line("Thin = " + itos(bThin) + ", Playback Rate:" + rtos(fRate));
+		//print_line("Thin = " + itos(bThin) + ", Playback Rate:" + rtos(fRate));
 
 		DWORD caps = 0;
 		CHECK_HR(media_session->GetSessionCapabilities(&caps));
@@ -446,7 +446,7 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 }
 
 Ref<Texture> VideoStreamPlaybackWMF::get_texture() {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
     return texture;
 }
 
@@ -492,21 +492,21 @@ void VideoStreamPlaybackWMF::update(float p_delta) {
 }
 
 void VideoStreamPlaybackWMF::set_mix_callback(AudioMixCallback p_callback, void *p_userdata) {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
 }
 
 int VideoStreamPlaybackWMF::get_channels() const {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
     return 0;
 }
 
 int VideoStreamPlaybackWMF::get_mix_rate() const {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
     return 0;
 }
 
 void VideoStreamPlaybackWMF::set_audio_track(int p_idx) {
-    print_line(__FUNCTION__ ": " + itos(p_idx));
+    //print_line(__FUNCTION__ ": " + itos(p_idx));
 }
 
 FrameData *VideoStreamPlaybackWMF::get_next_writable_frame() {
@@ -567,7 +567,7 @@ VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
 , is_video_seekable(false)
 , read_frame_idx(0)
 , write_frame_idx(0) {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
 
 	id = counter;
 	counter++;
@@ -576,7 +576,7 @@ VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
 }
 
 VideoStreamPlaybackWMF::~VideoStreamPlaybackWMF() {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
 
 	shutdown_stream();
 }
