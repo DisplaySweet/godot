@@ -19,7 +19,7 @@ SampleGrabberCallback::SampleGrabberCallback(VideoStreamPlaybackWMF* playback, T
 
 HRESULT SampleGrabberCallback::CreateInstance(SampleGrabberCallback **ppCB, VideoStreamPlaybackWMF* playback, ThreadSafe* mtx)
 {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
 
     *ppCB = new (std::nothrow) SampleGrabberCallback(playback, mtx);
 
@@ -31,12 +31,12 @@ HRESULT SampleGrabberCallback::CreateInstance(SampleGrabberCallback **ppCB, Vide
 }
 
 SampleGrabberCallback::~SampleGrabberCallback() {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
 }
 
 STDMETHODIMP SampleGrabberCallback::QueryInterface(REFIID riid, void** ppv)
 {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
     static const QITAB qit[] =
     {
         QITABENT(SampleGrabberCallback, IMFSampleGrabberSinkCallback),
@@ -68,31 +68,31 @@ STDMETHODIMP_(ULONG) SampleGrabberCallback::Release()
 
 STDMETHODIMP SampleGrabberCallback::OnClockStart(MFTIME hnsSystemTime, LONGLONG llClockStartOffset)
 {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
     return S_OK;
 }
 
 STDMETHODIMP SampleGrabberCallback::OnClockStop(MFTIME hnsSystemTime)
 {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
     return S_OK;
 }
 
 STDMETHODIMP SampleGrabberCallback::OnClockPause(MFTIME hnsSystemTime)
 {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
     return S_OK;
 }
 
 STDMETHODIMP SampleGrabberCallback::OnClockRestart(MFTIME hnsSystemTime)
 {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
     return S_OK;
 }
 
 STDMETHODIMP SampleGrabberCallback::OnClockSetRate(MFTIME hnsSystemTime, float flRate)
 {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
     return S_OK;
 }
 
@@ -100,7 +100,7 @@ STDMETHODIMP SampleGrabberCallback::OnClockSetRate(MFTIME hnsSystemTime, float f
 
 STDMETHODIMP SampleGrabberCallback::OnSetPresentationClock(IMFPresentationClock* pClock)
 {
-    print_line(__FUNCTION__);
+    //print_line(__FUNCTION__);
     return S_OK;
 }
 
