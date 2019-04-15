@@ -228,7 +228,7 @@ HRESULT CreateMediaSource(const String &p_file, IMFMediaSource** pMediaSource) {
 	HRESULT hr = S_OK;
 	CHECK_HR(MFCreateSourceResolver(&pSourceResolver));
 
-	print_line("Original File:" + p_file);
+	//print_line("Original File:" + p_file);
 
 	Error e;
 	FileAccess* fa = FileAccess::open(p_file, FileAccess::READ, &e);
@@ -432,10 +432,11 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 		//frame_data.resize(stream_info.size.x * stream_info.size.y * 3);
 
 		const int rgb24_frame_size = stream_info.size.x * stream_info.size.y * 3;
-		cache_frames.resize(10);
+		cache_frames.resize(24);
 		for (int i = 0; i < cache_frames.size(); ++i) {
 			cache_frames.write[i].data.resize(rgb24_frame_size);
 		}
+		read_frame_idx = write_frame_idx = 0;
 
 		texture->create(stream_info.size.x, stream_info.size.y, Image::FORMAT_RGB8, Texture::FLAG_FILTER | Texture::FLAG_VIDEO_SURFACE);
 	}
@@ -517,12 +518,14 @@ void VideoStreamPlaybackWMF::write_frame_done() {
 	mtx.lock();
 	int next_write_frame_idx = (write_frame_idx + 1) % cache_frames.size();
 
+	// TODO: just ignore the buffer full case for now because sometimes one Player may hit this if forever
+	// claiming all memory eventually...
 	if (read_frame_idx == next_write_frame_idx) {
-		//print_line(itos(id) + " Chase up! W:" + itos(write_frame_idx) + " R:" + itos(read_frame_idx));
-
+		//print_line(itos(id) + " Chase up! W:" + itos(write_frame_idx) + " R:" + itos(read_frame_idx) + " Size:" + itos(cache_frames.size()));
 		// the time gap between videos is larger than the buffer size
 		// need to extend the buffer size
 
+		/*
 		int current_size = cache_frames.size();
 		cache_frames.resize(current_size + 10);
 
@@ -531,6 +534,7 @@ void VideoStreamPlaybackWMF::write_frame_done() {
 			cache_frames.write[i].data.resize(rgb24_frame_size);
 		}
 		next_write_frame_idx = write_frame_idx + 1;
+		*/
 	}
 
 	write_frame_idx = next_write_frame_idx;
@@ -541,18 +545,21 @@ void VideoStreamPlaybackWMF::write_frame_done() {
 void VideoStreamPlaybackWMF::present() {
 
 	if (read_frame_idx == write_frame_idx) return;
-
-	FrameData& the_frame = cache_frames.write[read_frame_idx];
-	Ref<Image> img = memnew(Image(stream_info.size.x, stream_info.size.y, 0, Image::FORMAT_RGB8, the_frame.data)); //zero copy image creation
-	texture->set_data(img); //zero copy send to visual server
-
 	mtx.lock();
+	FrameData& the_frame = cache_frames.write[read_frame_idx];
 	read_frame_idx = (read_frame_idx + 1) % cache_frames.size();
 	mtx.unlock();
+	Ref<Image> img = memnew(Image(stream_info.size.x, stream_info.size.y, 0, Image::FORMAT_RGB8, the_frame.data)); //zero copy image creation
+	texture->set_data(img); //zero copy send to visual server
 }
 
 int64_t VideoStreamPlaybackWMF::next_sample_time() {
-	return cache_frames[read_frame_idx].sample_time;
+	int64_t time = INT64_MAX;
+	mtx.lock();
+	if (!cache_frames.empty())
+		time = cache_frames[read_frame_idx].sample_time;
+	mtx.unlock();
+	return time;
 }
 
 static int counter = 0;
@@ -573,6 +580,8 @@ VideoStreamPlaybackWMF::VideoStreamPlaybackWMF()
 	counter++;
 
 	texture = Ref<ImageTexture>(memnew(ImageTexture));
+	// make sure cache_frames.size() is something more than 0
+	cache_frames.resize(24);
 }
 
 VideoStreamPlaybackWMF::~VideoStreamPlaybackWMF() {
