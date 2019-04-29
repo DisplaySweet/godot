@@ -1,5 +1,12 @@
 [![Godot Engine logo](/logo.png)](https://godotengine.org)
 
+## DisplaySweet Additions
+
+- add WMF video playing with multi VideoPlayer sync
+  (audio control isn't implemented)
+- add mDNSResponder library for auto service discovery
+
+
 ## Godot Engine
 
 Homepage: https://godotengine.org
