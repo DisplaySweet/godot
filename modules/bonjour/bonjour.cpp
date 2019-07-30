@@ -1,5 +1,11 @@
 #include "bonjour.h"
+
+#ifdef _WIN32
 #include "WinSock2.h"
+#elif __APPLE__
+#include <sys/select.h>
+#include <sys/errno.h>
+#endif
 
 
 void Bonjour::handleEvents() {
