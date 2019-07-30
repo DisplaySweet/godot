@@ -35,7 +35,7 @@ env_bonjour.Append(CPPPATH=includes_dir)
 env_bonjour.add_source_files(env.modules_sources, "*.cpp")
 
 # We don't want godot's dependencies to be injected into our shared library.
-env_bonjour['LIBS'] = []
+#env_bonjour['LIBS'] = []
 
 #shared_lib = env_bonjour.SharedLibrary(target='#bin/bonjour', source=sources)
 #shared_lib_shim = shared_lib[0].name.rsplit('.', 1)[0]
