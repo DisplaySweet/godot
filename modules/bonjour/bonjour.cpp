@@ -9,28 +9,18 @@
 
 
 void Bonjour::handleEvents() {
-	// handle events
 	bool stopNow = false;
 	int dns_sd_fd = clientRef ? DNSServiceRefSockFD(clientRef) : -1;
-	int nfds = 1;
 	fd_set readfds;
 	struct timeval tv;
 	int result;
 
 	while (!stopNow) {
-		// 1. Set up the fd_set as usual here.
-		// This example client has no file descriptors of its own,
-		// but a real application would call FD_SET to add them to the set here
 		FD_ZERO(&readfds);
-
-		// 2. Add the fd for our client(s) to the fd_set
 		FD_SET(dns_sd_fd, &readfds);
-
-		// 3. Set up the timeout.
 		tv.tv_sec = 100000000;
 		tv.tv_usec = 0;
-
-		result = select(nfds, &readfds, (fd_set*)NULL, (fd_set*)NULL, &tv);
+		result = select(dns_sd_fd + 1, &readfds, (fd_set*)NULL, (fd_set*)NULL, &tv);
 
 		if (result > 0) {
 			DNSServiceErrorType err = kDNSServiceErr_NoError;
@@ -38,18 +28,16 @@ void Bonjour::handleEvents() {
 			if (FD_ISSET(dns_sd_fd, &readfds))
 				err = DNSServiceProcessResult(clientRef);
 
-			if (err) {
+			if (err)
 				print_line("Error. DNSServiceProcessResult returned:" + itos(err));
-				stopNow = true;
-			}
-			else
-				stopNow = true;
 		}
 		else {
 			print_line("select() returned:" + itos(result) + " errono:" + itos(errno));
 			if (errno != EINTR)
 				stopNow = true;
 		}
+        // exit anyway
+        stopNow = true;
 	}
 }
 
