@@ -166,9 +166,14 @@ void VideoStreamPlaybackGDNative::update(float p_delta) {
 		}
 	}
 
-	do {
+	if (seek_backward) {
 		update_texture();
-	} while (interface->get_playback_position(data_struct) < time && playing);
+		seek_backward = false;
+	}
+
+	while (interface->get_playback_position(data_struct) < time && playing) {
+		update_texture();
+	}
 }
 
 void VideoStreamPlaybackGDNative::update_texture() {
@@ -194,6 +199,7 @@ VideoStreamPlaybackGDNative::VideoStreamPlaybackGDNative() :
 		mix_callback(NULL),
 		num_channels(-1),
 		time(0),
+		seek_backward(false),
 		mix_rate(0),
 		delay_compensation(0),
 		pcm(NULL),
@@ -258,7 +264,9 @@ void VideoStreamPlaybackGDNative::stop() {
 void VideoStreamPlaybackGDNative::seek(float p_time) {
 	ERR_FAIL_COND(interface == NULL);
 	interface->seek(data_struct, p_time);
-    time = p_time;
+	if (p_time < time)
+		seek_backward = true;
+	time = p_time;
 }
 
 void VideoStreamPlaybackGDNative::set_paused(bool p_paused) {
