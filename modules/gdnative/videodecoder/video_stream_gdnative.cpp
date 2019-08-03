@@ -166,10 +166,9 @@ void VideoStreamPlaybackGDNative::update(float p_delta) {
 		}
 	}
 
-	while (interface->get_playback_position(data_struct) < time && playing) {
-
+	do {
 		update_texture();
-	}
+	} while (interface->get_playback_position(data_struct) < time && playing);
 }
 
 void VideoStreamPlaybackGDNative::update_texture() {
@@ -259,6 +258,7 @@ void VideoStreamPlaybackGDNative::stop() {
 void VideoStreamPlaybackGDNative::seek(float p_time) {
 	ERR_FAIL_COND(interface == NULL);
 	interface->seek(data_struct, p_time);
+    time = p_time;
 }
 
 void VideoStreamPlaybackGDNative::set_paused(bool p_paused) {
