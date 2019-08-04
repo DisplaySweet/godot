@@ -267,6 +267,10 @@ void VideoStreamPlaybackGDNative::seek(float p_time) {
 	if (p_time < time)
 		seek_backward = true;
 	time = p_time;
+	// reset audio buffers
+	memset(pcm, 0, num_channels * AUX_BUFFER_SIZE * sizeof(float));
+	pcm_write_idx = -1;
+	samples_decoded = 0;
 }
 
 void VideoStreamPlaybackGDNative::set_paused(bool p_paused) {
