@@ -21,7 +21,7 @@ protected:
     static void _bind_methods();
 
 public:
-    void registerBonjour(const String &type, const String &name, int port);
+    bool registerBonjour(const String &type, const String &name, int port);
     void unregisterBonjour();
 
     Bonjour() = default;
