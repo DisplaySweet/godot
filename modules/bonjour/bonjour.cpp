@@ -5,6 +5,10 @@
 #elif __APPLE__
 #include <sys/select.h>
 #include <sys/errno.h>
+#elif __linux__
+#include <arpa/inet.h>
+#include <sys/select.h>
+#include <sys/errno.h>
 #endif
 
 
@@ -41,7 +45,7 @@ void Bonjour::handleEvents() {
 	}
 }
 
-void Bonjour::registerBonjour(const String &type, const String &name, int port) {
+bool Bonjour::registerBonjour(const String &type, const String &name, int port) {
 	// convert godot String to const char*
 	std::wstring ws;
 
@@ -58,11 +62,12 @@ void Bonjour::registerBonjour(const String &type, const String &name, int port) 
 		c_name, c_type, domain, host, htons(port), 0, NULL, reg_reply, NULL);
 	if (err != kDNSServiceErr_NoError) {
 		print_line("Bonjour: registration failed with error:" + itos(err));
-		return;
+		return false;
 	}
 	print_line("Bonjour: registration done!");
 
 	handleEvents();
+	return true;
 }
 
 void DNSSD_API Bonjour::reg_reply(DNSServiceRef sdref, const DNSServiceFlags flags, DNSServiceErrorType errorCode,
