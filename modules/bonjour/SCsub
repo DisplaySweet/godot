@@ -19,12 +19,12 @@ if env['platform'] == "windows":
     env_bonjour.Append(CCFLAGS=["/DWIN32", "/DNDEBUG", "/DWINDOWS", "/DUSE_TCP_LOOPBACK", "/DNOT_HAVE_SA_LEN"])
     bonjour_src.append("mDNSWindows/DLL/dllmain.c")
     includes_dir = [thirdparty_dir + file for file in ["mDNSWindows", "mDNSWindows/DLL", "mDNSShared", "mDNSCore"]]
-
-
 elif env['platform'] == "osx":
     env_bonjour.Append(CCFLAGS=[""])
     includes_dir = [thirdparty_dir + file for file in ["mDNSMacOSX", "mDNSShared", "mDNSCore"]]
-
+elif env['platform'] == "x11":
+    env_bonjour.Append(CCFLAGS=["-D_GNU_SOURCE", "-DHAVE_IPV6", "-DNOT_HAVE_SA_LEN", "-DUSES_NETLINK", "-DHAVE_LINUX", "-DTARGET_OS_LINUX", "-fno-strict-aliasing"])
+    includes_dir = [thirdparty_dir + file for file in ["mDNSPosix", "mDNSShared", "mDNSCore"]]
 
 sources = [thirdparty_dir + file for file in bonjour_src]
 
