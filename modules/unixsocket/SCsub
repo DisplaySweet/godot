@@ -1,0 +1,11 @@
+# SCsub
+Import('env')
+Import('env_modules')
+
+env_unixsocket = env.Clone()
+
+includes_dir = []
+
+env_unixsocket.Append(CPPPATH=includes_dir)
+env_unixsocket.add_source_files(env.modules_sources, "*.cpp")
+
