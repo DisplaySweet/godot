@@ -1,5 +1,6 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#include <sys/errno.h>
 #include <sys/un.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,7 +17,7 @@ Error StreamPeerUnixSocket::connect_to_path(const String &p_path) {
 	struct sockaddr_un addr;
 
 	if ( (_sock_fd = ::socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-		print_line("socket creation failed");
+		print_line("[UnixDomainSocket] socket creation failed:" + itos(errno));
 		return FAILED;
 	}
 	memset(&addr, 0, sizeof(addr));
@@ -26,7 +27,8 @@ Error StreamPeerUnixSocket::connect_to_path(const String &p_path) {
 	print_line("[UnixDomainSocket] connecting to " + p_path);
 
 	if (::connect(_sock_fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
-		print_line("connect error");
+		print_line("[UnixDomainSocket] connect error:" + itos(errno));
+		_sock_fd = 0;
 		return FAILED;
 	}
 
