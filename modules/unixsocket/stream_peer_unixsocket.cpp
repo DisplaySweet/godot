@@ -1,4 +1,5 @@
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/errno.h>
 #include <sys/un.h>
@@ -16,10 +17,17 @@ Error StreamPeerUnixSocket::connect_to_path(const String &p_path) {
 	//Error err;
 	struct sockaddr_un addr;
 
-	if ( (_sock_fd = ::socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+	if ((_sock_fd = ::socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 		print_line("[UnixDomainSocket] socket creation failed:" + itos(errno));
 		return FAILED;
 	}
+	// avoid the socket sending SIGPIPE
+	int set = 1;
+	if (setsockopt(_sock_fd, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int)) == -1) {
+		print_line("[UnixDomainSocket] setsockopt failed:" + itos(errno));
+		return FAILED;
+	}
+
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
 	const char *c_path = p_path.utf8().get_data();
@@ -31,6 +39,10 @@ Error StreamPeerUnixSocket::connect_to_path(const String &p_path) {
 		_sock_fd = 0;
 		if (errno == ENOENT)
 			return ERR_FILE_NOT_FOUND;
+		else if (errno == ECONNREFUSED)
+			return ERR_CANT_CONNECT;
+		else if (errno == ETIMEDOUT)
+			return ERR_TIMEOUT;
 		return FAILED;
 	}
 
@@ -50,7 +62,7 @@ Error StreamPeerUnixSocket::write(const uint8_t *p_data, int p_bytes, int &r_sen
 		int sent_amount = ::write(_sock_fd, offset, data_to_send);
 
 		if (sent_amount < 0) {
-			print_line("[UnixDomainSocket] write failed:" + itos(sent_amount));
+			print_line("[UnixDomainSocket] write failed:" + itos(errno));
 			disconnect_from_path();
 			return FAILED;
 		} else if (sent_amount == data_to_send) {
@@ -87,7 +99,7 @@ Error StreamPeerUnixSocket::read(uint8_t *p_buffer, int p_bytes, int &r_received
 		int read = ::read(_sock_fd, p_buffer + total_read, to_read);
 
 		if (read < 0) {
-			print_line("[UnixDomainSocket] read failed:" + itos(read));
+			print_line("[UnixDomainSocket] read failed:" + itos(errno));
 			disconnect_from_path();
 			return FAILED;
 		} else if (read == 0) {
@@ -140,8 +152,10 @@ Error StreamPeerUnixSocket::get_partial_data(uint8_t *p_buffer, int p_bytes, int
 int StreamPeerUnixSocket::get_available_bytes() const {
 	ERR_FAIL_COND_V(!is_connected(), -1);
 
-	int count;
-	::ioctl(_sock_fd, FIONREAD, &count);
+	int count = 0;
+	if (::ioctl(_sock_fd, FIONREAD, &count) == -1) {
+		print_line("[UnixDomainSocket] ioctl failed:" + itos(errno));
+	}
 
 	return count;
 }
