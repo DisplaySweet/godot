@@ -29,6 +29,8 @@ Error StreamPeerUnixSocket::connect_to_path(const String &p_path) {
 	if (::connect(_sock_fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
 		print_line("[UnixDomainSocket] connect error:" + itos(errno));
 		_sock_fd = 0;
+		if (errno == ENOENT)
+			return ERR_FILE_NOT_FOUND;
 		return FAILED;
 	}
 
