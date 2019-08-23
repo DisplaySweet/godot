@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/errno.h>
+#include <signal.h>
 #include <sys/un.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,12 +22,17 @@ Error StreamPeerUnixSocket::connect_to_path(const String &p_path) {
 		print_line("[UnixDomainSocket] socket creation failed:" + itos(errno));
 		return FAILED;
 	}
+
+#ifdef __APPLE__
 	// avoid the socket sending SIGPIPE
 	int set = 1;
 	if (setsockopt(_sock_fd, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int)) == -1) {
 		print_line("[UnixDomainSocket] setsockopt failed:" + itos(errno));
 		return FAILED;
 	}
+#elif __linux__
+	signal(SIGPIPE, SIG_IGN);
+#endif
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
