@@ -61,7 +61,10 @@ static VideoDecoderServer decoder_server;
 
 const int AUX_BUFFER_SIZE = 1024; // Buffer 1024 samples.
 
+// how far off is still considered in sync
 const float UDP_TIMING_TOLERANCE = 0.02;
+// how far off we need to seek
+const float UDP_SEEK_THRESHOLD = 1.0;
 
 // NOTE: Callbacks for the GDNative libraries.
 extern "C" {
@@ -304,8 +307,14 @@ void VideoStreamPlaybackGDNative::update(float p_delta) {
 		// get master's time and update ours
 		float new_time = time;
 		receive_udp(udp_port, &new_time);
-		if (abs(new_time - time) > UDP_TIMING_TOLERANCE) {
-			// print_line("[slave] sync time " + rtos(time) + "->" + rtos(new_time));
+		float diff = abs(new_time - time);
+		if (diff > UDP_SEEK_THRESHOLD) {
+			// we should seek() because the difference is too big
+			print_line("[slave] video sync seek " + rtos(time) + "->" + rtos(new_time));
+			seek(new_time);
+		} else if (diff > UDP_TIMING_TOLERANCE) {
+			// may be too verbose to print
+			//print_line("[slave] video sync time " + rtos(time) + "->" + rtos(new_time));
 			time = new_time;
 		}
 	}
