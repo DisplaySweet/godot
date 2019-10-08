@@ -62,7 +62,7 @@ static VideoDecoderServer decoder_server;
 const int AUX_BUFFER_SIZE = 1024; // Buffer 1024 samples.
 
 // how far off is still considered in sync
-const float SYNC_TIMING_TOLERANCE = 0.02;
+const float SYNC_TIMING_TOLERANCE = 0;
 // how far off we need to seek
 const float SYNC_SEEK_THRESHOLD = 1.0;
 
@@ -461,7 +461,7 @@ void VideoStreamPlaybackGDNative::set_sync_time(float p_time) {
 		seek(p_time);
 	} else if (diff > SYNC_TIMING_TOLERANCE) {
 		// may be too verbose to print
-		print_line("video sync time " + rtos(time) + "->" + rtos(p_time));
+		//print_line("video sync time " + rtos(time) + "->" + rtos(p_time));
 		time = p_time;
 	}
 }
