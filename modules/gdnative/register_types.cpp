@@ -34,6 +34,8 @@
 
 #include "gdnative.h"
 
+#include "gdnative_video_syncer.h"
+
 #include "arvr/register_types.h"
 #include "nativescript/register_types.h"
 #include "net/register_types.h"
@@ -244,6 +246,8 @@ void register_gdnative_types() {
 	register_nativescript_types();
 	register_pluginscript_types();
 	register_videodecoder_types();
+
+	ClassDB::register_class<VideoSyncerGDNative>();
 
 	// run singletons
 
