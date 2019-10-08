@@ -62,9 +62,9 @@ static VideoDecoderServer decoder_server;
 const int AUX_BUFFER_SIZE = 1024; // Buffer 1024 samples.
 
 // how far off is still considered in sync
-const float UDP_TIMING_TOLERANCE = 0.02;
+const float SYNC_TIMING_TOLERANCE = 0.02;
 // how far off we need to seek
-const float UDP_SEEK_THRESHOLD = 1.0;
+const float SYNC_SEEK_THRESHOLD = 1.0;
 
 // NOTE: Callbacks for the GDNative libraries.
 extern "C" {
@@ -270,7 +270,6 @@ int VideoStreamPlaybackGDNative::receive_udp(int port, float *time) {
 #else
 		setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 #endif
-
 	}
 
 	// set blocking
@@ -313,16 +312,7 @@ void VideoStreamPlaybackGDNative::update(float p_delta) {
 		// get master's time and update ours
 		float new_time = time;
 		receive_udp(udp_port, &new_time);
-		float diff = abs(new_time - time);
-		if (diff > UDP_SEEK_THRESHOLD) {
-			// we should seek() because the difference is too big
-			print_line("[slave] video sync seek " + rtos(time) + "->" + rtos(new_time));
-			seek(new_time);
-		} else if (diff > UDP_TIMING_TOLERANCE) {
-			// may be too verbose to print
-			//print_line("[slave] video sync time " + rtos(time) + "->" + rtos(new_time));
-			time = new_time;
-		}
+		set_sync_time(new_time);
 	}
 
 	ERR_FAIL_COND(interface == NULL);
@@ -456,6 +446,23 @@ void VideoStreamPlaybackGDNative::seek(float p_time) {
 	memset(pcm, 0, num_channels * AUX_BUFFER_SIZE * sizeof(float));
 	pcm_write_idx = -1;
 	samples_decoded = 0;
+}
+
+void VideoStreamPlaybackGDNative::set_sync_time(float p_time) {
+	float diff = abs(p_time - time);
+	if (diff > SYNC_SEEK_THRESHOLD) {
+		// we should seek() because the difference is too big
+		print_line("video sync seek " + rtos(time) + "->" + rtos(p_time));
+		seek(p_time);
+	} else if (diff > SYNC_TIMING_TOLERANCE) {
+		// may be too verbose to print
+		print_line("video sync time " + rtos(time) + "->" + rtos(p_time));
+		time = p_time;
+	}
+}
+
+float VideoStreamPlaybackGDNative::get_sync_time() const {
+	return time;
 }
 
 void VideoStreamPlaybackGDNative::set_paused(bool p_paused) {
