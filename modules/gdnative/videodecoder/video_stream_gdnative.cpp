@@ -182,6 +182,9 @@ void VideoStreamPlaybackGDNative::send_udp(const char *ip, int port, char *mesg)
 	static int sockfd = -1;
 	static struct sockaddr_in socketinfo;
 
+	// port is invalid
+	if (port <= 0) return;
+
 	if (sockfd == -1) {
 		static const int one = 1;
 		int ip_valid = 0;
@@ -234,6 +237,9 @@ int VideoStreamPlaybackGDNative::receive_udp(int port, float *time) {
 	int n;
 
 	static int sockfd = -1;
+
+	// port is invalid
+	if (port <= 0) return -1;
 
 	if (sockfd == -1) {
 #ifdef _WIN32

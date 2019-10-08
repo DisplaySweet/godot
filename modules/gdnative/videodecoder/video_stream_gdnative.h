@@ -196,6 +196,7 @@ class VideoStreamGDNative : public VideoStream {
 
 	bool is_master;
 	String udp_ip;
+	// udp_port <= 0 will disable the UDP sync
 	int udp_port;
 
 protected:
@@ -210,7 +211,7 @@ public:
 	virtual void set_audio_track(int p_track);
 	virtual Ref<VideoStreamPlayback> instance_playback();
 
-	VideoStreamGDNative(): is_master(true) {}
+	VideoStreamGDNative(): is_master(true), udp_port(0) {}
 };
 
 class ResourceFormatLoaderVideoStreamGDNative : public ResourceFormatLoader {
