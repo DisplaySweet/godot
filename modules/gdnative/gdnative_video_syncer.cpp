@@ -15,7 +15,7 @@ void VideoSyncerGDNative::_bind_methods() {
 
 void VideoSyncerGDNative::add_video(Node *const p_player) {
 
-	auto player = dynamic_cast<VideoPlayer *const>(p_player);
+	VideoPlayer *const player = dynamic_cast<VideoPlayer *const>(p_player);
 	if (player) {
 		if (players.find(player) == -1)
 			players.push_back((VideoPlayer*)player);
@@ -26,7 +26,7 @@ void VideoSyncerGDNative::remove_video(Node *const p_player) {
 
 	stop();
 
-	auto player = dynamic_cast<VideoPlayer *const>(p_player);
+	VideoPlayer *const player = dynamic_cast<VideoPlayer *const>(p_player);
 	if (player) {
 		int idx = players.find(player);
 		if (idx != -1)
@@ -49,7 +49,7 @@ void VideoSyncerGDNative::play() {
 	playbacks.clear();
 	for (int i = 0; i < players.size(); ++i) {
 		VideoPlayer* player = players.get(i);
-		auto playback = (VideoStreamPlaybackGDNative*)player->get_playback().ptr();
+		VideoStreamPlaybackGDNative *playback = (VideoStreamPlaybackGDNative*)player->get_playback().ptr();
 		playbacks.push_back(playback);
 	}
 
@@ -91,7 +91,7 @@ void VideoSyncerGDNative::present() {
 	}
 }
 
-VideoSyncerGDNative::VideoSyncerGDNative() {
+VideoSyncerGDNative::VideoSyncerGDNative() : is_playing(false) {
 }
 
 VideoSyncerGDNative::~VideoSyncerGDNative() {
