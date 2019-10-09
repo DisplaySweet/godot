@@ -11,7 +11,7 @@ class VideoSyncerGDNative : public Node {
 	Vector<VideoStreamPlaybackGDNative*> playbacks;
 	Vector<VideoPlayer*> players;
 
-	bool is_playing = false;
+	bool is_playing;
 
 protected:
 	static void _bind_methods();
