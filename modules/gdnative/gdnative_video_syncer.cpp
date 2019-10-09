@@ -51,6 +51,8 @@ void VideoSyncerGDNative::play() {
 		VideoPlayer* player = players.get(i);
 		VideoStreamPlaybackGDNative *playback = (VideoStreamPlaybackGDNative*)player->get_playback().ptr();
 		playbacks.push_back(playback);
+		// seek to start of stream
+		playback->seek(0);
 	}
 
 	for (int i = 0; i < players.size(); ++i) {
