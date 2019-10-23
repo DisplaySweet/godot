@@ -302,6 +302,7 @@ void VideoStreamPlaybackGDNative::update(float p_delta) {
 		return;
 	}
 	time += p_delta;
+	float old_time = time;
 
 	if (is_master) {
 		// send master's time
@@ -314,6 +315,8 @@ void VideoStreamPlaybackGDNative::update(float p_delta) {
 		receive_udp(udp_port, &new_time);
 		set_sync_time(new_time);
 	}
+	// compensate for the synced time
+	p_delta += time - old_time;
 
 	ERR_FAIL_COND(interface == NULL);
 	interface->update(data_struct, p_delta);
