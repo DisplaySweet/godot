@@ -313,10 +313,11 @@ void VideoStreamPlaybackGDNative::update(float p_delta) {
 		// get master's time and update ours
 		float new_time = time;
 		receive_udp(udp_port, &new_time);
-		set_sync_time(new_time);
+		bool is_seeked = set_sync_time(new_time);
+		// compensate for the synced time only when seek didn't happen
+		if (!is_seeked)
+			p_delta += time - old_time;
 	}
-	// compensate for the synced time
-	p_delta += time - old_time;
 
 	ERR_FAIL_COND(interface == NULL);
 	interface->update(data_struct, p_delta);
@@ -451,17 +452,20 @@ void VideoStreamPlaybackGDNative::seek(float p_time) {
 	samples_decoded = 0;
 }
 
-void VideoStreamPlaybackGDNative::set_sync_time(float p_time) {
+// returns true if sync causes a seek event, false otherwise
+bool VideoStreamPlaybackGDNative::set_sync_time(float p_time) {
 	float diff = abs(p_time - time);
 	if (diff > SYNC_SEEK_THRESHOLD) {
 		// we should seek() because the difference is too big
 		print_line("video sync seek " + rtos(time) + "->" + rtos(p_time));
 		seek(p_time);
+		return true;
 	} else if (diff > SYNC_TIMING_TOLERANCE) {
 		// may be too verbose to print
 		//print_line("video sync time " + rtos(time) + "->" + rtos(p_time));
 		time = p_time;
 	}
+	return false;
 }
 
 float VideoStreamPlaybackGDNative::get_sync_time() const {
