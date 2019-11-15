@@ -173,7 +173,7 @@ public:
 	virtual float get_playback_position() const;
 	virtual void seek(float p_time);
 
-	virtual void set_sync_time(float p_time);
+	virtual bool set_sync_time(float p_time);
 	virtual float get_sync_time() const;
 
 	virtual void set_audio_track(int p_idx);
