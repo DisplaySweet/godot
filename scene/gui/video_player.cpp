@@ -375,8 +375,10 @@ float VideoPlayer::get_stream_position() const {
 
 void VideoPlayer::set_stream_position(float p_position) {
 
-	if (playback.is_valid())
+	if (playback.is_valid()) {
 		playback->seek(p_position);
+		resampler.flush();
+	}
 }
 
 Ref<Texture> VideoPlayer::get_video_texture() const {
