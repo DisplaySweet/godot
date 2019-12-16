@@ -529,6 +529,9 @@ void VideoStreamPlaybackGDNative::set_netsync(bool p_master, const String &p_ip,
 	is_master = p_master;
 	udp_ip = p_ip;
 	udp_port = p_port;
+
+	if (udp_port > 0)
+		print_line("video netsync enabled. Is_master:" + itos(is_master) + " Sync " + udp_ip + ":" + itos(udp_port));
 }
 
 /* --- NOTE VideoStreamGDNative starts here. ----- */
