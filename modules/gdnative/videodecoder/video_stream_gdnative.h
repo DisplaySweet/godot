@@ -130,7 +130,7 @@ class VideoStreamPlaybackGDNative : public VideoStreamPlayback {
 	int samples_decoded;
 
 	bool is_master;
-	String udp_ip;
+	char udp_ip[64];
 	int udp_port;
 
 	void cleanup();
