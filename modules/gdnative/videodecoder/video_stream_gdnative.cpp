@@ -53,6 +53,8 @@
 #include <sys/types.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <string.h>
+#include <string>
 
 
 VideoDecoderServer *VideoDecoderServer::instance = NULL;
@@ -308,7 +310,7 @@ void VideoStreamPlaybackGDNative::update(float p_delta) {
 		// send master's time
 		char current_time[128];
 		snprintf(current_time, sizeof(current_time), "%f", time);
-		send_udp(udp_ip.utf8().get_data(), udp_port, current_time);
+		send_udp(udp_ip, udp_port, current_time);
 	} else {
 		// get master's time and update ours
 		float new_time = time;
@@ -532,7 +534,10 @@ void VideoStreamPlaybackGDNative::set_netsync(bool p_master, const String &p_ip,
 	ERR_FAIL_COND(interface == NULL);
 
 	is_master = p_master;
-	udp_ip = p_ip;
+
+	std::wstring ws = p_ip.c_str();
+	std::string s(ws.begin(), ws.end());
+	strcpy(udp_ip, s.c_str());
 	udp_port = p_port;
 
 	if (udp_port > 0)
