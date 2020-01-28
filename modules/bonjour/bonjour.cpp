@@ -190,7 +190,10 @@ void DNSSD_API Bonjour::serviceCallback(DNSServiceRef service, DNSServiceFlags f
 }
 
 bool Bonjour::browseService(const String &type) {
-    const char *c_type = type.utf8().get_data();
+    std::wstring ws = type.c_str();
+    std::string stype(ws.begin(), ws.end());
+    const char* c_type = stype.c_str();
+
     DNSServiceRef ref;
 
     if (is_browsing) {
@@ -214,8 +217,15 @@ bool Bonjour::browseService(const String &type) {
 }
 
 bool Bonjour::registerBonjour(const String &type, const String &name, int port) {
-	const char* c_type = type.utf8().get_data();
-	const char* c_name = name.utf8().get_data();
+    std::wstring ws;
+
+    ws = name.c_str();
+    std::string sname(ws.begin(), ws.end());
+    const char* c_name = sname.c_str();
+
+    ws = type.c_str();
+    std::string stype(ws.begin(), ws.end());
+    const char* c_type = stype.c_str();
 
     if (registerClientRef) {
 		print_line("Bonjour: already registered, skipping");
