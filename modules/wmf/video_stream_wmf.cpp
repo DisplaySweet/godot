@@ -446,7 +446,7 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 	}
 }
 
-Ref<Texture> VideoStreamPlaybackWMF::get_texture() {
+Ref<Texture> VideoStreamPlaybackWMF::get_texture() const {
     //print_line(__FUNCTION__);
     return texture;
 }
