@@ -26,7 +26,7 @@ class Bonjour : public Reference {
     DNSServiceRef registerClientRef;
     std::set<DNSServiceRef> clientRefSet;
     std::map<String, BonjourServiceData*> clientMap;
-    Mutex *mutex;
+    Mutex mutex;
 
     Thread *eventThread;
     bool thread_exit;

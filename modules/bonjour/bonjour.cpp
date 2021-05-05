@@ -52,7 +52,7 @@ void Bonjour::handleEvents(void *ud) {
         mapRefFd.clear();
 		FD_ZERO(&readfds);
 
-        bonjour->mutex->lock();
+        bonjour->mutex.lock();
         for (std::set<DNSServiceRef>::iterator it = bonjour->clientRefSet.begin(); it != bonjour->clientRefSet.end(); ++it) {
             int fd = DNSServiceRefSockFD(*it);
             mapRefFd.insert(std::pair<DNSServiceRef, int>(*it, fd));
@@ -60,7 +60,7 @@ void Bonjour::handleEvents(void *ud) {
             if (fd > max_fd)
                 max_fd = fd;
         }
-        bonjour->mutex->unlock();
+        bonjour->mutex.unlock();
 
 		tv.tv_sec = 0;
 		tv.tv_usec = 1000;
@@ -211,7 +211,8 @@ bool Bonjour::browseService(const String &type) {
     is_browsing = true;
 
     if (!eventThread) {
-        eventThread = Thread::create(handleEvents, this);
+        eventThread = memnew(Thread);
+        eventThread->start(handleEvents, this);
     }
     return true;
 }
@@ -243,7 +244,8 @@ bool Bonjour::registerBonjour(const String &type, const String &name, int port) 
     addClientRef(registerClientRef);
 
     if (!eventThread) {
-        eventThread = Thread::create(handleEvents, this);
+        eventThread = memnew(Thread);
+        eventThread->start(handleEvents, this);
     }
 	return true;
 }
@@ -293,17 +295,14 @@ Bonjour::Bonjour() :
     registerClientRef(NULL),
     eventThread(NULL),
     thread_exit(false) {
-    mutex = Mutex::create();
 }
 
 Bonjour::~Bonjour() {
     if (eventThread) {
         thread_exit = true;
-        Thread::wait_to_finish(eventThread);
-        memdelete(eventThread);
+        eventThread->wait_to_finish();
         eventThread = NULL;
     }
-    memdelete(mutex);
     // clean up data
     for (std::map<String, BonjourServiceData*>::iterator it = clientMap.begin(); it != clientMap.end(); ++it) {
         memdelete(it->second);
