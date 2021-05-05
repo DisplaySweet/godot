@@ -1,7 +1,7 @@
 #ifndef SAMPLEGRABBERCALLBACK_H
 #define SAMPLEGRABBERCALLBACK_H
 
-#include "core/os/thread_safe.h"
+#include "core/os/mutex.h"
 #include "core/io/resource_loader.h"
 #include "scene/resources/video_stream.h"
 #include <mfidl.h>
@@ -13,7 +13,7 @@ class SampleGrabberCallback : public IMFSampleGrabberSinkCallback {
 	
 	long m_cRef;
 	VideoStreamPlaybackWMF* playback;
-	ThreadSafe* mtx;
+	Mutex& mtx;
 	int width;
 	int height;
 
@@ -21,10 +21,10 @@ class SampleGrabberCallback : public IMFSampleGrabberSinkCallback {
 	IMFSample *m_pSample = nullptr;
 	IMFSample *m_pOutSample = nullptr;
 
-	SampleGrabberCallback(VideoStreamPlaybackWMF* playback, ThreadSafe* mtx);
+	SampleGrabberCallback(VideoStreamPlaybackWMF* playback, Mutex& mtx);
 
 public:
-	static HRESULT CreateInstance(SampleGrabberCallback **ppCB, VideoStreamPlaybackWMF* playback, ThreadSafe* mtx);
+	static HRESULT CreateInstance(SampleGrabberCallback **ppCB, VideoStreamPlaybackWMF* playback, Mutex& mtx);
 	~SampleGrabberCallback();
 
 	// IUnknown methods

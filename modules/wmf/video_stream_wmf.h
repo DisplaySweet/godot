@@ -3,7 +3,7 @@
 
 #include "core/io/resource_loader.h"
 #include "scene/resources/video_stream.h"
-#include "core/os/thread_safe.h"
+#include "core/os/mutex.h"
 
 #include <deque>
 
@@ -33,7 +33,7 @@ class VideoStreamPlaybackWMF : public VideoStreamPlayback {
 
 	PoolVector<uint8_t> frame_data;
 	Ref<ImageTexture> texture;
-    ThreadSafe mtx;
+    Mutex mtx;
 
 	bool is_video_playing;
 	bool is_video_paused;

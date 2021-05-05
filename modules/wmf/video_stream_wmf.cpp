@@ -402,7 +402,7 @@ void VideoStreamPlaybackWMF::set_file(const String &p_file) {
 	CHECK_HR(CreateMediaSource(p_file, &media_source));
 	CHECK_HR(MFCreateMediaSession(nullptr, &media_session));
 
-	CHECK_HR(SampleGrabberCallback::CreateInstance(&sample_grabber_callback, this, &mtx));
+	CHECK_HR(SampleGrabberCallback::CreateInstance(&sample_grabber_callback, this, mtx));
 	CHECK_HR(CreateTopology(media_source, sample_grabber_callback, &topology, &stream_info));
 
 	CHECK_HR(media_session->SetTopology(0, topology));
@@ -515,7 +515,7 @@ FrameData *VideoStreamPlaybackWMF::get_next_writable_frame() {
 }
 
 void VideoStreamPlaybackWMF::write_frame_done() {
-	mtx.lock();
+	MutexLock lock(mtx);
 	int next_write_frame_idx = (write_frame_idx + 1) % cache_frames.size();
 
 	// TODO: just ignore the buffer full case for now because sometimes one Player may hit this if forever
@@ -538,12 +538,9 @@ void VideoStreamPlaybackWMF::write_frame_done() {
 	}
 
 	write_frame_idx = next_write_frame_idx;
-
-	mtx.unlock();
 }
 
 void VideoStreamPlaybackWMF::present() {
-
 	if (read_frame_idx == write_frame_idx) return;
 	mtx.lock();
 	FrameData& the_frame = cache_frames.write[read_frame_idx];
@@ -554,11 +551,10 @@ void VideoStreamPlaybackWMF::present() {
 }
 
 int64_t VideoStreamPlaybackWMF::next_sample_time() {
+	MutexLock lock(mtx);
 	int64_t time = INT64_MAX;
-	mtx.lock();
 	if (!cache_frames.empty())
 		time = cache_frames[read_frame_idx].sample_time;
-	mtx.unlock();
 	return time;
 }
 

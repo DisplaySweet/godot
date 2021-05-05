@@ -10,14 +10,14 @@
 
 #define CHECK_HR(func) if (SUCCEEDED(hr)) { hr = (func); if (FAILED(hr)) { print_line(__FUNCTION__ " failed, return:" + itos(hr)); } }
 
-SampleGrabberCallback::SampleGrabberCallback(VideoStreamPlaybackWMF* playback, ThreadSafe* mtx)
+SampleGrabberCallback::SampleGrabberCallback(VideoStreamPlaybackWMF* playback, Mutex& mtx)
 : playback(playback)
 , mtx(mtx)
 , m_cRef(1)
 {
 }
 
-HRESULT SampleGrabberCallback::CreateInstance(SampleGrabberCallback **ppCB, VideoStreamPlaybackWMF* playback, ThreadSafe* mtx)
+HRESULT SampleGrabberCallback::CreateInstance(SampleGrabberCallback **ppCB, VideoStreamPlaybackWMF* playback, Mutex& mtx)
 {
     //print_line(__FUNCTION__);
 
@@ -170,7 +170,7 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType,
 	DWORD outDataLen;
 	pOutputBuffer->Lock(&outData, NULL, &outDataLen);
 
-	//mtx->lock();
+	//mtx.lock();
 	{
 		FrameData* frame = playback->get_next_writable_frame();
 		frame->sample_time = llSampleTime / 10000;
@@ -200,7 +200,7 @@ STDMETHODIMP SampleGrabberCallback::OnProcessSample(REFGUID guidMajorMediaType,
 		}
 		//memcpy(rgb_buffer, outData, outDataLen);
 	}
-    //mtx->unlock();
+    //mtx.unlock();
 
 	pOutputBuffer->Unlock();
 
