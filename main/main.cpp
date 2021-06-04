@@ -77,6 +77,7 @@
 #include "editor/editor_settings.h"
 #include "editor/progress_dialog.h"
 #include "editor/project_manager.h"
+#include "editor/editor_file_system.h"
 #endif
 
 /* Static members */
@@ -121,6 +122,7 @@ static bool auto_quit = false;
 static OS::ProcessID allow_focus_steal_pid = 0;
 #ifdef TOOLS_ENABLED
 static bool auto_build_solutions = false;
+static bool importer_only = false;
 #endif
 
 // Display
@@ -1519,6 +1521,8 @@ bool Main::start() {
 			editor = true;
 		} else if (args[i] == "-p" || args[i] == "--project-manager") {
 			project_manager = true;
+		} else if (args[i] == "--importer-only") {
+			importer_only = true;
 #endif
 		} else if (args[i].length() && args[i][0] != '-' && positional_arg == "") {
 			positional_arg = args[i];
@@ -2197,6 +2201,12 @@ bool Main::iteration() {
 		}
 		if (!EditorNode::get_singleton()->call_build()) {
 			ERR_FAIL_V_MSG(true, "Command line option --build-solutions was passed, but the build callback failed. Aborting.");
+		}
+	}
+	// we should just quit after the first call to Main::iteration()
+	if (importer_only) {
+		if (frames > 1) {
+			return true;
 		}
 	}
 #endif
