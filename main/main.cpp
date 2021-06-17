@@ -2203,11 +2203,13 @@ bool Main::iteration() {
 			ERR_FAIL_V_MSG(true, "Command line option --build-solutions was passed, but the build callback failed. Aborting.");
 		}
 	}
-	// we should just quit after the first call to Main::iteration()
-	if (importer_only) {
-		if (frames > 1) {
-			return true;
-		}
+	// we should not quit too soon after the first call to Main::iteration().
+	// The reason why we can't quit just after the first call to Main::iteration() is because when a texture is loaded for use with 3D, and the project has set detect_3d flag (as import default setting),
+	//  ResourceImporterTexture::_texture_reimport_3d() will be called, which then will request reimport of a texture as 3D (import settings can be changed so it will reimport).
+	// The reimport will be triggered by EditorNode::_notification() in NOTIFICATION_PROCESS event 
+	if (importer_only && frames > physics_fps) {
+		// quit the program
+		return true;
 	}
 #endif
 
